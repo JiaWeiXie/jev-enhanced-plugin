@@ -1,0 +1,8 @@
+{
+  "locale": "zh-TW",
+  "context": "Edit an internal performance announcement. Preserve facts, code and direct quotations. Do not claim authorship or watermark detection.",
+  "passages": [
+    "值得注意的是，我們進行了深入的探討。這不是一次更新，而是效率的革命。",
+    "測試環境的 p95 從 420 ms 降至 310 ms，正式環境尚未驗證。請保留 `retry_count=3`。客戶原話：「不是速度，而是可靠性。」"
+  ]
+}

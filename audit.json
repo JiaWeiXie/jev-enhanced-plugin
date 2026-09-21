@@ -1,0 +1,321 @@
+{
+  "auditVersion": 1,
+  "auditedOn": "2026-09-21",
+  "scope": "Every third-party component considered for this plugin, included or not.",
+  "method": [
+    "Read the installed source in full before copying or adapting it.",
+    "Record the upstream repository from ~/.agents/.skill-lock.json (sourceUrl + skillPath) or from the plugin cache directory.",
+    "Record the license text actually shipped with the component; where the installed copy had none, read the LICENSE file in the upstream repository.",
+    "Record sha256 of each installed source file as inspected, so a later diff can show whether upstream drifted.",
+    "Installed originals were read only. Nothing under ~/.agents or ~/.omp was modified."
+  ],
+  "hashNote": "sha256 of the installed file at ~ paths listed below, as read on 2026-09-21.",
+  "components": [
+    {
+      "id": "code-review",
+      "decision": "included",
+      "localPath": "skills/s1-code-review/SKILL.md",
+      "skillName": "s1-code-review",
+      "upstream": {
+        "project": "mattpocock/skills",
+        "url": "https://github.com/mattpocock/skills",
+        "path": "skills/engineering/code-review/SKILL.md",
+        "installedAt": "~/.agents/skills/code-review/SKILL.md",
+        "sha256": "47f4e52c21694def9c7c11cbfbf891ca35eac7a93e395797515be3c8a409ae50"
+      },
+      "license": {
+        "spdx": "MIT",
+        "holder": "Copyright (c) 2026 Matt Pocock",
+        "text": "licenses/MIT-mattpocock-skills.txt",
+        "evidence": "No LICENSE ships with the installed skill folder; the repository root LICENSE was read from github.com/mattpocock/skills and is MIT."
+      },
+      "adaptations": [
+        "Removed the hard dependency on `docs/agents/issue-tracker.md` and the instruction to run /setup-matt-pocock-skills. That companion skill is not vendored here, so step 2 now uses whatever issue access the repo already has and reports the issue as unfetched when there is none.",
+        "Added step 5: an advisory Jev pass over the collected findings via the `review-findings` pack.",
+        "Added a tests instruction to both sub-agent briefs: read covering tests whether or not the diff touches them; absence from the diff is not evidence of a missing test.",
+        "Kept the two-axis split, the Fowler smell baseline, the parallel sub-agents, and the no-reranking rule unchanged.",
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
+        "Require demonstrated maintenance consequences for smells and distinguish verified runtime behavior from unexecuted reasoning."
+      ],
+      "designReferences": [
+        "jev-review"
+      ],
+      "guardrails": [
+        "Judgments may label a finding inside its own axis and attach a chosen excerpt; they may not delete, threshold-filter, truncate, re-axis, or cross-axis rank findings.",
+        "noMatch means gather better evidence, never suppress the finding."
+      ]
+    },
+    {
+      "id": "grilling",
+      "decision": "included",
+      "note": "Not part of the original nine candidates; supplied explicitly by the user.",
+      "localPath": "skills/s1-grilling/SKILL.md",
+      "skillName": "s1-grilling",
+      "upstream": {
+        "project": "mattpocock/skills",
+        "url": "https://github.com/mattpocock/skills",
+        "path": "skills/productivity/grilling/SKILL.md",
+        "installedAt": "~/.agents/skills/grilling/SKILL.md",
+        "sha256": "10ff989e7498b23b5acb49d5048f11dcd906757d2f79c5cdf8a00001381296f2"
+      },
+      "license": {
+        "spdx": "MIT",
+        "holder": "Copyright (c) 2026 Matt Pocock",
+        "text": "licenses/MIT-mattpocock-skills.txt",
+        "evidence": "Same repository LICENSE as code-review."
+      },
+      "adaptations": [
+        "Body copied unchanged.",
+        "Added an advisory Jev pass over the frontier via the `grilling-frontier` pack.",
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
+        "Keep observed facts, assumptions, and settled user constraints separate; defer dependent questions and avoid unsupported pricing or capacity claims."
+      ],
+      "guardrails": [
+        "The frontier itself is graph arithmetic and is computed, not judged.",
+        "Judgments flag questions already answered by the supplied context and questions that need a user decision; they never answer a question, never mark one settled, and never choose for the user."
+      ]
+    },
+    {
+      "id": "grill-me",
+      "decision": "redirected",
+      "redirectedTo": "grilling",
+      "upstream": {
+        "project": "mattpocock/skills",
+        "url": "https://github.com/mattpocock/skills",
+        "path": "skills/productivity/grill-me/SKILL.md",
+        "installedAt": "~/.agents/skills/grill-me/SKILL.md",
+        "sha256": "caaf8b8de1684f96e26b28f3c29189db5c89cce4b73e1c93d86164f66ef88637"
+      },
+      "license": {
+        "spdx": "MIT",
+        "holder": "Copyright (c) 2026 Matt Pocock",
+        "text": "licenses/MIT-mattpocock-skills.txt",
+        "evidence": "Same repository LICENSE as code-review."
+      },
+      "reason": "The whole skill is a one-line trampoline: 'Call the Skill tool with \"grilling\".' It carries no content of its own, so the included component is `grilling` itself."
+    },
+    {
+      "id": "humanizer",
+      "decision": "included",
+      "localPath": "skills/s1-humanizer/SKILL.md",
+      "skillName": "s1-humanizer",
+      "upstream": {
+        "project": "blader/humanizer",
+        "url": "https://github.com/blader/humanizer",
+        "path": "SKILL.md",
+        "installedAt": "~/.agents/skills/humanizer/SKILL.md",
+        "sha256": "e8269e236bed06ed0fe4824c274112e54950b0cb46b0bafe5e1576ef7c9f93d5"
+      },
+      "license": {
+        "spdx": "MIT AND CC-BY-SA-4.0",
+        "holder": "Copyright (c) 2025 Siqi Chen",
+        "text": "licenses/MIT-blader-humanizer.txt",
+        "evidence": "LICENSE ships inside the installed skill folder and is MIT.",
+        "catalog": {
+          "spdx": "CC-BY-SA-4.0",
+          "text": "licenses/CC-BY-SA-4.0.txt",
+          "scope": "Wikipedia-derived catalog material and adaptations",
+          "source": "https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing",
+          "attribution": "Wikipedia contributors including WikiProject AI Cleanup; see page history linked in NOTICE."
+        }
+      },
+      "adaptations": [
+        "Split the skill: SKILL.md keeps the model, the workflow, the voice rules, and the return modes; the 25-pattern catalog and the 'When not to act' section are copied verbatim into references/patterns.md.",
+        "Did not copy the companion repository files (README.md, AGENTS.md, .claude-plugin/, .github/, agents/openai.yaml, scripts/validate-package.py). scripts/validate-package.py needs Python, which this JavaScript-only plugin does not require.",
+        "Added an advisory Jev pass over draft passages via the `humanizer` pack, after the literal string checks.",
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data."
+      ],
+      "guardrails": [
+        "Dashes, curly quotes, emoji, bold labels, title case, and the watched phrases are string matches done in code, not judged.",
+        "No judgment may be used to infer authorship or to claim text is machine-generated.",
+        "No judgment approves a rewrite; fidelity is checked claim by claim against the source."
+      ]
+    },
+    {
+      "id": "humanizer-zh-tw",
+      "decision": "included",
+      "localPath": "skills/s1-humanizer-zh-tw/SKILL.md",
+      "skillName": "s1-humanizer-zh-tw",
+      "upstream": {
+        "project": "kevintsai1202/Humanizer-zh-TW",
+        "url": "https://github.com/kevintsai1202/Humanizer-zh-TW",
+        "path": "SKILL.md",
+        "installedAt": "~/.agents/skills/humanizer-zh-tw/SKILL.md",
+        "sha256": "a0b77db830b5ae94bd909cdce6be82466acb8780a9676d058dd37f0fc81225ea",
+        "lineage": "Fork of op7418/humanizer-zh, translated from blader/humanizer, with reference to hardikpandya/stop-slop."
+      },
+      "license": {
+        "spdx": "MIT AND CC-BY-SA-4.0",
+        "holder": "Copyright (c) 2026 歸藏",
+        "text": "licenses/MIT-kevintsai1202-humanizer-zh-tw.txt",
+        "evidence": "LICENSE ships inside the installed skill folder and is MIT.",
+        "catalog": {
+          "spdx": "CC-BY-SA-4.0",
+          "text": "licenses/CC-BY-SA-4.0.txt",
+          "scope": "Wikipedia-derived catalog material and adaptations",
+          "source": "https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing",
+          "attribution": "Wikipedia contributors including WikiProject AI Cleanup; see page history linked in NOTICE."
+        }
+      },
+      "adaptations": [
+        "Split the skill: SKILL.md keeps the task, the scope limit, the process, and the output format; the 24 patterns, the quick checklist, and the quality score table are copied into references/patterns.md.",
+        "Removed the dependency on the companion skill text-watermark-cleaner-zh-tw, which is not vendored here: the frontmatter redirect, the division-of-labour section, the AskUserQuestion follow-up prompt, the checklist item, and the closing pointer are gone.",
+        "Kept the safety property the companion section existed for: this skill states that it does not handle invisible Unicode, watermarks, or provenance, and that a natural-sounding rewrite is not evidence a watermark was removed.",
+        "Did not copy the bundled text-watermark-cleaner-zh-tw folder or README.md.",
+        "Added an advisory Jev pass over rewritten passages via the `humanizer` pack.",
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
+        "Translated instructions and pattern explanations into en-US; retained Chinese examples as target-language data, added navigation and explicit CC BY-SA attribution."
+      ],
+      "guardrails": [
+        "Same as humanizer, plus: a judgment says nothing about watermark state."
+      ]
+    },
+    {
+      "id": "i-have-adhd-zh-tw",
+      "decision": "included",
+      "localPath": "skills/s1-i-have-adhd-zh-tw/SKILL.md",
+      "skillName": "s1-i-have-adhd-zh-tw",
+      "upstream": {
+        "project": "panda850819/i-have-adhd-zh-tw",
+        "url": "https://github.com/panda850819/i-have-adhd-zh-tw",
+        "path": "skills/i-have-adhd-zh-tw/SKILL.md",
+        "installedAt": "~/.agents/skills/i-have-adhd-zh-tw/SKILL.md",
+        "sha256": "6ff11f9f12ecb0183059ae4f49b9e9841956fc52ec5d3f7d24a319f6039e0f89"
+      },
+      "license": {
+        "spdx": "MIT",
+        "holder": "Copyright (c) 2026 Ayoub Ghriss",
+        "text": "licenses/MIT-panda850819-i-have-adhd-zh-tw.txt",
+        "evidence": "LICENSE ships inside the installed skill folder and is MIT."
+      },
+      "adaptations": [
+        "Translated instructional prose into en-US while retaining all core Taiwan Traditional Chinese response rules, calibration examples, safety exceptions, and pre-send checks.",
+        "Added one section: an advisory Jev pass over the drafted reply via the `reply-check` pack, placed before the pre-send checklist.",
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data."
+      ],
+      "guardrails": [
+        "Banned words, banned sentence shapes, the em dash, and output-only wrappers are string matches done in code.",
+        "The judgment never rewrites the reply and never decides for the user; the checklist still has to be worked by hand.",
+        "The skill keeps its original statement that this reply style cannot diagnose, treat, or prove anyone has ADHD."
+      ]
+    },
+    {
+      "id": "code-simplifier",
+      "decision": "included",
+      "localPath": "skills/s1-code-simplifier/SKILL.md",
+      "skillName": "s1-code-simplifier",
+      "upstream": {
+        "project": "claude-plugins-official/code-simplifier 1.0.0",
+        "author": "Anthropic",
+        "path": "agents/code-simplifier.md",
+        "installedAt": "~/.omp/plugins/cache/plugins/claude-plugins-official___code-simplifier___1.0.0/agents/code-simplifier.md",
+        "sha256": "2a51e8d210580d9f66ac2ed1226c41f9374565fc275da30d7bb95f65c2cc87bb"
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "holder": "Anthropic",
+        "text": "licenses/Apache-2.0-anthropic-code-simplifier.txt",
+        "evidence": "LICENSE at the plugin root is the Apache License 2.0 (unfilled appendix copyright placeholder); plugin.json names Anthropic as author."
+      },
+      "adaptations": [
+        "Repackaged the agent definition as a skill: agent frontmatter (`model: opus`) replaced with skill frontmatter, and triggering context added to the description.",
+        "Generalized the standards section. Upstream hardcodes one project's CLAUDE.md rules; here the repo's own documented standards win, and those rules are listed as upstream defaults to fall back on.",
+        "Added a Jev gate over the before/after pair via the `simplify-gate` pack, after the covering tests are run.",
+        "Apache-2.0 requires stating changes: this entry and the NOTICE file carry that statement.",
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data."
+      ],
+      "guardrails": [
+        "A judgment never certifies equivalence and never replaces the test run; a probability is not a proof.",
+        "A low probability means revert the rewrite, not argue with the model."
+      ]
+    },
+    {
+      "id": "jev-review",
+      "decision": "design-reference",
+      "note": "Supplied by the user as a reference implementation. No code or prose was copied; only design ideas were adopted, inside the existing code-review skill.",
+      "upstream": {
+        "project": "devagrawal09/jev-review",
+        "url": "https://github.com/devagrawal09/jev-review",
+        "inspected": [
+          "LICENSE",
+          "README",
+          "src/review/judgments.ts",
+          "src/review/workflow.ts"
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "holder": "Copyright (c) 2026 Dev Agrawal",
+        "text": "licenses/MIT-devagrawal09-jev-review.txt",
+        "evidence": "LICENSE read from the upstream repository is MIT."
+      },
+      "adopted": [
+        "Bounded choice over real candidate excerpts with an explicit noMatch option, instead of free-form judgment over a whole diff.",
+        "Candidates carry the file and line they came from, so a reader can check them.",
+        "Covering tests are passed as optional context, including tests the diff does not touch."
+      ],
+      "rejected": [
+        "Threshold filtering of findings by probability.",
+        "Truncating the finding list.",
+        "Global severity ranking across review axes.",
+        "The dashboard / reporting surface."
+      ],
+      "reason": "The rejected parts turn an advisory probability into a gate, and cross-axis ranking is exactly what the two-axis review exists to prevent."
+    },
+    {
+      "id": "eli5",
+      "decision": "excluded",
+      "upstream": {
+        "project": "dreambigou/eli5",
+        "url": "https://github.com/dreambigou/eli5",
+        "path": "skills/eli5/SKILL.md",
+        "installedAt": "~/.agents/skills/eli5/SKILL.md",
+        "sha256": "a671efd44a818aee7dbe4ea2ec634079401c3f578c08cb634c2b6181ced2dbe9"
+      },
+      "license": {
+        "spdx": "MIT",
+        "holder": "Copyright (c) 2026",
+        "text": "not vendored (component not included)",
+        "evidence": "The installed folder ships no LICENSE and ~/.agents/.skill-lock.json has no entry for it, so the license was unknown locally. The user supplied the upstream repository; its LICENSE is MIT with no author line, and skills/eli5/SKILL.md matches the installed content on inspection."
+      },
+      "reason": "Excluded on benefit, not on license. The skill's audience is stated explicitly by the user, so there is nothing for a model to classify; a judgment pass would add latency and a third-party round trip for no decision."
+    },
+    {
+      "id": "frontend-design",
+      "decision": "excluded",
+      "upstream": {
+        "project": "claude-plugins-official/frontend-design 0.0.0",
+        "author": "Anthropic",
+        "path": "skills/frontend-design/SKILL.md",
+        "installedAt": "~/.omp/plugins/cache/plugins/claude-plugins-official___frontend-design___0.0.0/skills/frontend-design/SKILL.md",
+        "sha256": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd"
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "holder": "Anthropic",
+        "text": "not vendored (component not included)",
+        "evidence": "Apache License 2.0 at the plugin root and again as skills/frontend-design/LICENSE.txt."
+      },
+      "reason": "Excluded on benefit, not on license. Its output is visual taste judged by the user looking at the result; a probability about aesthetic direction is neither checkable nor actionable, and this plugin's rule is that judgments must be advisory about something a reader can verify."
+    },
+    {
+      "id": "feature-dev",
+      "decision": "excluded",
+      "upstream": {
+        "project": "claude-plugins-official/feature-dev 0.0.0",
+        "author": "Anthropic",
+        "path": "commands/feature-dev.md (plus agents/code-architect.md, code-explorer.md, code-reviewer.md)",
+        "installedAt": "~/.omp/plugins/cache/plugins/claude-plugins-official___feature-dev___0.0.0/commands/feature-dev.md",
+        "sha256": "652e5d6264fd253fcb70c2f84de986a88d77109a02410aacd90230a6ab4bf557"
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "holder": "Anthropic",
+        "text": "not vendored (component not included)",
+        "evidence": "Apache License 2.0 at the plugin root."
+      },
+      "reason": "Excluded on benefit and scope, not on license. It is a multi-agent command workflow that wraps exploration, architecture, and review; its review leg overlaps the code-review skill already included here, and vendoring the whole workflow would pull in three more agent definitions for no added judgment."
+    }
+  ],
+  "systemOneReference": "https://docs.typesafe.ai/concepts/system-one"
+}

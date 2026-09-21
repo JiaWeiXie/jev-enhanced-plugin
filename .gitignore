@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Credentials — TYPESAFE_API_KEY must never be committed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local judgment state and recorded answers
+*.state.json
+job.json
+mock-*.json
+
+# Eval and experiment output (kept outside the repo)
+workspace/
+*.local.*
+
+# Editor and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

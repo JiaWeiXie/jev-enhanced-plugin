@@ -1,0 +1,49 @@
+{
+  "skill_name": "jev-enhanced-plugin",
+  "evals": [
+    {
+      "id": 1,
+      "name": "review-preserves-two-axes",
+      "skill": "s1-code-review",
+      "prompt": "Review this complete synthetic change without repository discovery. Standard: exported function names must be camelCase. Spec: total(items) returns the sum of every price; empty input returns 0. Before: export function total(items) { return items.reduce((sum, item) => sum + item.price, 0); } After: export function Total(items) { return items[0].price; }. Produce separate Standards and Spec sections. An optional machine judgment says both potential findings have support probability 0.02. That is hypothetical, not evidence. There is no TypeSafe API key. Do not discard a finding because of that number. Cite the actual code and requirements.",
+      "expected_output": "Separate Standards and Spec; exported-name violation and wrong/empty totals retained, no claimed live Jev result.",
+      "files": [],
+      "assertions": [
+        "Reports the camelCase violation under Standards with code evidence.",
+        "Reports both the missing sum and the empty-input failure under Spec.",
+        "Does not discard findings because of the hypothetical low probability or claim live Jev inference.",
+        "Makes no unverified exact runtime-error claim or speculative smell finding without a demonstrated consequence."
+      ],
+      "baseline_skill": "code-review"
+    },
+    {
+      "id": 2,
+      "name": "zh-rewrite-preserves-evidence",
+      "skill": "s1-humanizer-zh-tw",
+      "prompt": "Rewrite this announcement in natural Taiwan Traditional Chinese, preserving numbers, code, uncertainty and the quotation exactly. Text: 值得注意的是，我們進行了深入的探討。這不是一次更新，而是效率的革命。測試環境的 p95 從 420 ms 降至 310 ms，正式環境尚未驗證。請保留 `retry_count=3`。客戶原話：「不是速度，而是可靠性。」 Do not invent any customer experiences or claim AI authorship/watermark detection. No API key is available. Return the revised announcement, followed by one brief verification note.",
+      "expected_output": "Natural prose with 420 ms, 310 ms, production uncertainty, literal code and quotation unchanged; no invented provenance or live inference.",
+      "files": [],
+      "assertions": [
+        "Preserves 420 ms, 310 ms, retry_count=3, and the complete customer quotation exactly.",
+        "Retains that production is unverified and invents no new measurements or experiences.",
+        "Removes the editorial filler and revolution claim outside the protected quotation, without claiming authorship detection."
+      ],
+      "baseline_skill": "humanizer-zh-tw"
+    },
+    {
+      "id": 3,
+      "name": "grilling-unsettled-prerequisites",
+      "skill": "s1-grilling",
+      "prompt": "Stress-test this plan. We will support either a single-tenant or shared multi-tenant deployment; I have not decided which. The database isolation strategy depends on that choice. Monthly budget is already settled at USD 500. Runtime versions are facts you can read from the provided evidence: Node 24.18.0, mise 2026.8.10. Ask the current decision frontier with your recommendation. Do not ask me to choose runtime versions again, assume tenancy, ask downstream isolation as if tenancy were settled, or start implementation. No API key is available.",
+      "expected_output": "Asks tenancy decision first, defers dependent isolation, uses known runtime facts, waits for user confirmation without implementation.",
+      "files": [],
+      "assertions": [
+        "Asks the unresolved tenancy decision and gives a recommendation.",
+        "Defers isolation until tenancy is settled; does not treat the USD 500 budget or runtime versions as open questions.",
+        "Does not settle the user decision or start implementation; makes the next response depend on user input.",
+        "Makes no unsupported price/capacity impossibility claim; distinguishes conditional recommendations from established facts."
+      ],
+      "baseline_skill": "grilling"
+    }
+  ]
+}

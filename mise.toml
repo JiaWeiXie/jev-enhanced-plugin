@@ -1,0 +1,21 @@
+[tools]
+node = "24.18.0"
+
+[env]
+TYPESAFE_MODEL = "jev-latest"
+
+[tasks.install]
+description = "Install locked JavaScript dependencies"
+run = "npm ci"
+
+[tasks.test]
+description = "Run the pack policy test suite"
+run = "node --test test/*.test.mjs"
+
+[tasks.jev]
+description = "Run a judgment pack (see src/cli.mjs --help)"
+run = "node src/cli.mjs"
+
+[tasks.check]
+description = "Syntax-check every source file"
+run = "node --check src/jev.mjs && node --check src/cli.mjs && for f in packs/*.mjs; do node --check \"$f\"; done"

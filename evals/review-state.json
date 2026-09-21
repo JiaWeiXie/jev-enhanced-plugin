@@ -1,0 +1,21 @@
+{
+  "diff": "--- a/total.js\n+++ b/total.js\n@@ -1,1 +1,1 @@\n- export function total(items) { return items.reduce((sum, item) => sum + item.price, 0); }\n+ export function Total(items) { return items[0].price; }",
+  "standards": "Exported function names must use camelCase.",
+  "spec": "total(items) sums all prices. Empty input returns 0.",
+  "findings": [
+    {
+      "axis": "standards",
+      "file": "total.js",
+      "line": 1,
+      "claim": "Total violates camelCase",
+      "evidence": "export function Total(items); standard requires camelCase"
+    },
+    {
+      "axis": "spec",
+      "file": "total.js",
+      "line": 1,
+      "claim": "Only the first price is returned; empty input throws",
+      "evidence": "items[0].price accesses an absent element for [] and ignores every later price"
+    }
+  ]
+}
