@@ -74,13 +74,13 @@ This plugin is distributed under `MIT AND Apache-2.0 AND CC-BY-SA-4.0`. New code
 
 ### Adapted skills
 
-| Packaged skill | Upstream | Author | License |
+| Packaged skill | Upstream | Provenance / credits | License |
 | --- | --- | --- | --- |
 | `s1-code-review` | [`mattpocock/skills`](https://github.com/mattpocock/skills): `skills/engineering/code-review` | Matt Pocock | MIT |
 | `s1-grilling` | [`mattpocock/skills`](https://github.com/mattpocock/skills): `skills/productivity/grilling` | Matt Pocock | MIT |
-| `s1-humanizer` | [`blader/humanizer`](https://github.com/blader/humanizer) | Siqi Chen | MIT; CC BY-SA 4.0 for the Wikipedia-derived catalog |
-| `s1-humanizer-zh-tw` | [`kevintsai1202/Humanizer-zh-TW`](https://github.com/kevintsai1202/Humanizer-zh-TW), a fork of [`op7418/humanizer-zh`](https://github.com/op7418/humanizer-zh), translated from `blader/humanizer` and referencing `hardikpandya/stop-slop` | 歸藏 | MIT; CC BY-SA 4.0 for the Wikipedia-derived catalog |
-| `s1-i-have-adhd-zh-tw` | [`panda850819/i-have-adhd-zh-tw`](https://github.com/panda850819/i-have-adhd-zh-tw) | Ayoub Ghriss | MIT |
+| `s1-humanizer` | [`blader/humanizer`](https://github.com/blader/humanizer) | Siqi Chen; Wikipedia contributors and WikiProject AI Cleanup for the catalog | MIT; CC BY-SA 4.0 for the Wikipedia-derived catalog |
+| `s1-humanizer-zh-tw` | [`kevintsai1202/Humanizer-zh-TW`](https://github.com/kevintsai1202/Humanizer-zh-TW) | Repository maintainer: `kevintsai1202`; Traditional Chinese adaptation of [`op7418/Humanizer-zh`](https://github.com/op7418/Humanizer-zh); core translation: `blader/humanizer`; practical sections reference `hardikpandya/stop-slop`; MIT copyright holder: 歸藏 | MIT; CC BY-SA 4.0 for the Wikipedia-derived catalog |
+| `s1-i-have-adhd-zh-tw` | [`panda850819/i-have-adhd-zh-tw`](https://github.com/panda850819/i-have-adhd-zh-tw) | Repository maintainer: `panda850819`; non-official Traditional Chinese derivative of [`ayghri/i-have-adhd`](https://github.com/ayghri/i-have-adhd), created by Ayoub Ghriss; MIT copyright retained from Ayoub Ghriss | MIT |
 | `s1-code-simplifier` | `claude-plugins-official/code-simplifier` 1.0.0, `agents/code-simplifier.md` | Anthropic | Apache-2.0 |
 
 Every packaged skill in this table is modified from its upstream. The `s1-humanizer` and `s1-humanizer-zh-tw` catalogs include Wikipedia-derived CC BY-SA 4.0 material; their attribution and required redistribution notice are in `NOTICE`. The Apache-2.0 material carries its required statement of changes in `NOTICE`, section 4(b).

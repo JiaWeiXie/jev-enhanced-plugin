@@ -70,6 +70,11 @@ Derived from the "humanizer-zh-tw" skill in kevintsai1202/Humanizer-zh-TW
   Copyright (c) 2026 歸藏
   MIT License: licenses/MIT-kevintsai1202-humanizer-zh-tw.txt
   Upstream lineage: fork of op7418/humanizer-zh, translated from blader/humanizer.
+  Credits: repository maintainer kevintsai1202; a Traditional Chinese adaptation
+  of op7418/Humanizer-zh; core files translated from blader/humanizer; practical
+  sections reference hardikpandya/stop-slop. 歸藏 is the MIT copyright holder.
+  The catalog is attributed separately to Wikipedia contributors and WikiProject
+  AI Cleanup in the Pattern sources section below.
 
 Modifications:
   - Split into SKILL.md and references/patterns.md (24 patterns, quick checklist,
@@ -87,6 +92,9 @@ Derived from the "i-have-adhd-zh-tw" skill in panda850819/i-have-adhd-zh-tw
   (upstream: skills/i-have-adhd-zh-tw/SKILL.md)
   Copyright (c) 2026 Ayoub Ghriss
   MIT License: licenses/MIT-panda850819-i-have-adhd-zh-tw.txt
+  Credits: repository maintainer panda850819; a non-official Traditional Chinese
+  derivative of ayghri/i-have-adhd, created by Ayoub Ghriss. Ayoub Ghriss is the
+  retained MIT copyright holder, not the maintainer of this repository.
 
 Modifications:
   - Added an optional advisory Jev judgment pass over substantial drafted replies.
