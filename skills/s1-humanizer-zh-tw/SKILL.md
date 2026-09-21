@@ -101,7 +101,11 @@ Write the remaining semantic passages into `job.json`:
 ```
 
 ```bash
+# Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" humanizer --state job.json --json
+
+# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+(cd "<skill-directory>" && node "../../src/cli.mjs" humanizer --state job.json --json)
 ```
 
 The pack asks four things about each passage: whether it tells the reader something they

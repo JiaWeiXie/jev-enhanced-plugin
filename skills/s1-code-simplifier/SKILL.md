@@ -71,7 +71,11 @@ Once the tests pass, write the pair to `job.json`:
 ```
 
 ```bash
+# Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" simplify-gate --state job.json --json
+
+# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+(cd "<skill-directory>" && node "../../src/cli.mjs" simplify-gate --state job.json --json)
 ```
 
 Use the judgments as prompts for a second inspection of error paths, early returns, types, and side-effect ordering. Their usefulness on this repository has not been measured.

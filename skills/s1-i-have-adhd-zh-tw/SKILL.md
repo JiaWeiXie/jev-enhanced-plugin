@@ -157,7 +157,11 @@ When you do run it, write the draft and the original request into `job.json`:
 `banned` is optional. When supplied, the CLI does the string matching in code and returns `result.literals`: the count and positions (index, line, column) of each term.
 
 ```bash
+# Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" reply-check --state job.json --json
+
+# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+(cd "<skill-directory>" && node "../../src/cli.mjs" reply-check --state job.json --json)
 ```
 
 Banned words, banned sentence patterns, the em dash `——`, parenthetical asides, and output-only wrapper text are all string matching. Check them yourself with search; do not delegate them to a model.

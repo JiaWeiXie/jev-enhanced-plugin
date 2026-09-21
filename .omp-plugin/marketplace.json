@@ -1,0 +1,14 @@
+{
+  "name": "jev-enhanced-plugin",
+  "owner": {
+    "name": "jev-enhanced-plugin contributors"
+  },
+  "plugins": [
+    {
+      "name": "jev-enhanced-plugin",
+      "description": "Third-party skills enhanced with advisory TypeSafe Jev judgments.",
+      "version": "0.1.0",
+      "source": "./"
+    }
+  ]
+}

@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "jev-enhanced-plugin",
-      "source": ".",
+      "source": "./",
       "description": "Third-party skills enhanced with advisory TypeSafe Jev judgments."
     }
   ]

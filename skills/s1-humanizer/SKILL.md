@@ -78,7 +78,11 @@ Then take the passages where the question is about meaning, not characters, and 
 ```
 
 ```bash
+# Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" humanizer --state job.json --json
+
+# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+(cd "<skill-directory>" && node "../../src/cli.mjs" humanizer --state job.json --json)
 ```
 
 The pack asks four things about each passage: whether it tells the reader something they would not already have (`carries_information`), whether it repeats a point another passage already makes (`restates_other_passage`), whether it claims more than `context` supports (`claim_exceeds_context`), and whether it reads as natural, idiomatic prose in `locale` (`reads_natural_for_locale`). Use the answers to revisit passages you were unsure about, and to catch what step 3 missed.

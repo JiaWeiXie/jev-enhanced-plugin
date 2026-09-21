@@ -11,6 +11,7 @@
   "bin": {
     "jev-pack": "./src/cli.mjs"
   },
+  "omp": {},
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "jev": "node src/cli.mjs"

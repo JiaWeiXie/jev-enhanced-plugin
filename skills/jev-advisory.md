@@ -22,11 +22,16 @@ Source: https://docs.typesafe.ai/concepts/system-one
 
 ## The command
 
-Claude Code substitutes `${CLAUDE_PLUGIN_ROOT}` with the installed plugin directory,
-so every skill runs the same command:
+Claude Code exposes the installed root as `${CLAUDE_PLUGIN_ROOT}`. Oh My Pi appends
+the absolute skill directory to an invoked skill and requires relative assets to be resolved
+against it. Use the command for the active host:
 
 ```bash
+# Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" <pack> --state job.json --json
+
+# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+(cd "<skill-directory>" && node "../../src/cli.mjs" <pack> --state job.json --json)
 ```
 
 - `job.json` is a file you write yourself, in the state shape the skill documents.

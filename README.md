@@ -1,6 +1,6 @@
 # jev-enhanced-plugin
 
-A Claude Code plugin with six judgment-bearing skills. Each one is a skill already in use plus a single addition: a typed judgment from [TypeSafe](https://typesafe.ai) Jev (System One) at the points where the skill previously relied on the agent's own impression. A seventh skill, `s1-migrate-skill`, is the procedure for bringing further skills in.
+A Claude Code and Oh My Pi plugin with six judgment-bearing skills. Each one is a skill already in use plus a single addition: a typed judgment from [TypeSafe](https://typesafe.ai) Jev (System One) at the points where the skill previously relied on the agent's own impression. A seventh skill, `s1-migrate-skill`, is the procedure for bringing further skills in.
 
 Jev output here is advisory. It never approves a change, never removes a finding, and never decides anything on the user's behalf. Anything a program can check exactly (string matches, dependency graphs, diff boundaries) is checked in code and never sent to a model.
 
@@ -22,7 +22,9 @@ Every skill keeps its original procedure. The pack runs alongside it and adds pr
 `s1-migrate-skill` is the procedure for bringing another skill into this plugin: license audit, deciding which steps become judgments and which stay code, the pack, the adapted `SKILL.md`, tests, and documentation. It has no pack of its own. Its `references/pack-template.mjs` is the starting point for a new pack.
 ## Install
 
-Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Add this GitHub repository as a marketplace, then install its plugin:
+### Claude Code
+
+Add this GitHub repository as a marketplace, then install its plugin:
 
 ```bash
 claude plugin marketplace add JiaWeiXie/jev-enhanced-plugin
@@ -34,6 +36,20 @@ The first command registers the marketplace. The second installs this plugin fro
 To update later, run `claude plugin update jev-enhanced-plugin@jev-enhanced-plugin` and restart Claude Code. The plugin package requires Node 20 or newer.
 
 For development only, Claude Code can load the repository for one session with `claude --plugin-dir /absolute/path/to/jev-enhanced-plugin`.
+
+### Oh My Pi
+
+Add this repository as a marketplace, verify its catalog entry, then install the plugin globally:
+
+```bash
+omp plugin marketplace add JiaWeiXie/jev-enhanced-plugin
+omp plugin discover jev-enhanced-plugin
+omp plugin install jev-enhanced-plugin@jev-enhanced-plugin --scope user
+```
+
+For development, `omp plugin link /absolute/path/to/jev-enhanced-plugin` links the current checkout globally so edits take effect immediately.
+
+The seven skills are discovered under their `s1-` names. Restart an existing Oh My Pi session after installing or linking the plugin.
 
 ## Requirements
 

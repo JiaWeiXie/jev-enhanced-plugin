@@ -76,7 +76,11 @@ Before you send a round, write the tree to `job.json`:
 ```
 
 ```bash
+# Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" grilling-frontier --state job.json --json
+
+# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+(cd "<skill-directory>" && node "../../src/cli.mjs" grilling-frontier --state job.json --json)
 ```
 
 The frontier itself is graph arithmetic: a question is on the frontier when every id in its `prerequisites` appears in `settled`. The pack computes that literally, and you should too; no judgment is involved and none is needed.
