@@ -78,12 +78,12 @@ This plugin is distributed under `MIT AND Apache-2.0 AND CC-BY-SA-4.0`. New code
 | --- | --- | --- | --- |
 | `s1-code-review` | [`mattpocock/skills`](https://github.com/mattpocock/skills): `skills/engineering/code-review` | Matt Pocock | MIT |
 | `s1-grilling` | [`mattpocock/skills`](https://github.com/mattpocock/skills): `skills/productivity/grilling` | Matt Pocock | MIT |
-| `s1-humanizer` | [`blader/humanizer`](https://github.com/blader/humanizer) | Siqi Chen | MIT |
-| `s1-humanizer-zh-tw` | [`kevintsai1202/Humanizer-zh-TW`](https://github.com/kevintsai1202/Humanizer-zh-TW) (fork of `op7418/humanizer-zh`, translated from `blader/humanizer`) | 歸藏 | MIT |
+| `s1-humanizer` | [`blader/humanizer`](https://github.com/blader/humanizer) | Siqi Chen | MIT; CC BY-SA 4.0 for the Wikipedia-derived catalog |
+| `s1-humanizer-zh-tw` | [`kevintsai1202/Humanizer-zh-TW`](https://github.com/kevintsai1202/Humanizer-zh-TW), a fork of [`op7418/humanizer-zh`](https://github.com/op7418/humanizer-zh), translated from `blader/humanizer` and referencing `hardikpandya/stop-slop` | 歸藏 | MIT; CC BY-SA 4.0 for the Wikipedia-derived catalog |
 | `s1-i-have-adhd-zh-tw` | [`panda850819/i-have-adhd-zh-tw`](https://github.com/panda850819/i-have-adhd-zh-tw) | Ayoub Ghriss | MIT |
-| `s1-code-simplifier` | `code-simplifier` plugin 1.0.0 agent definition | Anthropic | Apache-2.0 |
+| `s1-code-simplifier` | `claude-plugins-official/code-simplifier` 1.0.0, `agents/code-simplifier.md` | Anthropic | Apache-2.0 |
 
-Every skill here is modified from its upstream. The Apache-2.0 material carries a statement of changes in `NOTICE`, as section 4(b) requires.
+Every packaged skill in this table is modified from its upstream. The `s1-humanizer` and `s1-humanizer-zh-tw` catalogs include Wikipedia-derived CC BY-SA 4.0 material; their attribution and required redistribution notice are in `NOTICE`. The Apache-2.0 material carries its required statement of changes in `NOTICE`, section 4(b).
 
 ### Design reference only
 
