@@ -144,7 +144,7 @@
         "sha256": "a0b77db830b5ae94bd909cdce6be82466acb8780a9676d058dd37f0fc81225ea",
         "credits": {
           "repositoryMaintainer": "kevintsai1202",
-          "lineage": "Traditional Chinese adaptation of op7418/Humanizer-zh; core files translated from blader/humanizer; practical sections reference hardikpandya/stop-slop.",
+          "lineage": "Traditional Chinese adaptation of op7418/Humanizer-zh; source material from blader/humanizer; practical sections reference hardikpandya/stop-slop.",
           "mitCopyrightHolder": "歸藏",
           "catalogAttribution": "Wikipedia contributors including WikiProject AI Cleanup; see NOTICE for attribution and history links."
         }
@@ -188,7 +188,7 @@
         "sha256": "6ff11f9f12ecb0183059ae4f49b9e9841956fc52ec5d3f7d24a319f6039e0f89",
         "credits": {
           "repositoryMaintainer": "panda850819",
-          "lineage": "Non-official Traditional Chinese derivative of ayghri/i-have-adhd, created by Ayoub Ghriss.",
+          "lineage": "Non-official Traditional Chinese derivative of ayghri/i-have-adhd, whose original English version was created by Ayoub Ghriss.",
           "mitCopyrightHolder": "Ayoub Ghriss"
         }
       },
