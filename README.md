@@ -22,17 +22,18 @@ Every skill keeps its original procedure. The pack runs alongside it and adds pr
 `s1-migrate-skill` is the procedure for bringing another skill into this plugin: license audit, deciding which steps become judgments and which stay code, the pack, the adapted `SKILL.md`, tests, and documentation. It has no pack of its own. Its `references/pack-template.mjs` is the starting point for a new pack.
 ## Install
 
-Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Clone the repository, then load the clone as a plugin:
+Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Add this GitHub repository as a marketplace, then install its plugin:
 
 ```bash
-git clone https://github.com/JiaWeiXie/jev-enhanced-plugin.git
-cd jev-enhanced-plugin
-npm ci
-claude --plugin-dir "$PWD"
+claude plugin marketplace add JiaWeiXie/jev-enhanced-plugin
+claude plugin install jev-enhanced-plugin@jev-enhanced-plugin
 ```
-Run the commands in order. `npm ci` installs the locked SDK dependency. In the Claude Code session, the seven skills are available by their `s1-` names. To update, run `git pull --ff-only && npm ci`, then start Claude Code with the same `--plugin-dir` path.
 
-For a development checkout, run `npm ci` once and use this repository's absolute path with `--plugin-dir`. This repository is a plugin source tree, not a Claude Code marketplace, so it does not support `/plugin install <name>@<marketplace>`.
+The first command registers the marketplace. The second installs this plugin from that marketplace. Restart Claude Code after installation; its seven skills are then available by their `s1-` names.
+
+To update later, run `claude plugin update jev-enhanced-plugin@jev-enhanced-plugin` and restart Claude Code. The plugin package requires Node 20 or newer.
+
+For development only, Claude Code can load the repository for one session with `claude --plugin-dir /absolute/path/to/jev-enhanced-plugin`.
 
 ## Requirements
 

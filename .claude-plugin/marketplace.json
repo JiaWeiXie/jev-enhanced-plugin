@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "jev-enhanced-plugin",
+  "version": "0.1.0",
+  "description": "Marketplace for the Jev-enhanced Claude Code plugin.",
+  "owner": {
+    "name": "jev-enhanced-plugin contributors"
+  },
+  "plugins": [
+    {
+      "name": "jev-enhanced-plugin",
+      "source": ".",
+      "description": "Third-party skills enhanced with advisory TypeSafe Jev judgments."
+    }
+  ]
+}
