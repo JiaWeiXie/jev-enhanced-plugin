@@ -22,15 +22,13 @@ Source: https://docs.typesafe.ai/concepts/system-one
 
 ## The command
 
-Claude Code exposes the installed root as `${CLAUDE_PLUGIN_ROOT}`. Oh My Pi appends
-the absolute skill directory to an invoked skill and requires relative assets to be resolved
-against it. Use the command for the active host:
+Claude Code exposes the installed root as `${CLAUDE_PLUGIN_ROOT}`. Codex and Oh My Pi expose an absolute skill directory; resolve the CLI relative to that directory. Use the command for the active host:
 
 ```bash
 # Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" <pack> --state job.json --json
 
-# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+# OpenAI Codex or Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
 (cd "<skill-directory>" && node "../../src/cli.mjs" <pack> --state job.json --json)
 ```
 

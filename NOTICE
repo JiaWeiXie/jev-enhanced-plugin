@@ -7,6 +7,18 @@ the complete audit of every candidate considered (included, redirected, and
 excluded) are in audit.json.
 
 -------------------------------------------------------------------------------
+src/vendor/typesafe-sdk.mjs
+-------------------------------------------------------------------------------
+Vendored from @typesafe-ai/sdk 0.6.0
+  https://www.npmjs.com/package/@typesafe-ai/sdk
+  Copyright (c) 2026 TypeSafe
+  MIT License: licenses/MIT-typesafe-ai-sdk.txt
+
+This exact ESM runtime is included so Git marketplace installations can run the
+Jev CLI without a package-manager install hook. Its source hash and package
+provenance are recorded in audit.json.
+
+-------------------------------------------------------------------------------
 skills/s1-code-review/
 -------------------------------------------------------------------------------
 Derived from the "code-review" skill in mattpocock/skills

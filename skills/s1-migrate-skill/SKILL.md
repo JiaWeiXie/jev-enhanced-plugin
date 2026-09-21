@@ -8,7 +8,7 @@ license: MIT
 
 Take a skill that already works and add one thing: typed judgments from Jev at the points where the skill previously relied on the agent's own impression. Everything else in the skill stays as it was. The result is a new directory `skills/s1-<name>/` and, usually, a new pack `packs/<pack>.mjs`.
 
-Read `../jev-advisory.md` first. It is the shared contract every migrated skill points to, and this procedure exists to produce skills that honor it. Then read the live TypeSafe docs for the question design: start at https://docs.typesafe.ai/llms.txt and read at least `concepts/system-one.md`, `concepts/state.md`, and the page for each primitive you plan to use. Installed SDK types live in `node_modules/@typesafe-ai/sdk/dist/index.d.mts`.
+Read `../jev-advisory.md` first. It is the shared contract every migrated skill points to, and this procedure exists to produce skills that honor it. Then read the live TypeSafe docs for the question design: start at https://docs.typesafe.ai/llms.txt and read at least `concepts/system-one.md`, `concepts/state.md`, and the page for each primitive you plan to use. The vendored SDK runtime is `src/vendor/typesafe-sdk.mjs`; verify its current upstream API against the live docs before changing it.
 
 Never copy a skill you have not read in full. Never modify the installed original under `~/.agents`, `~/.claude`, or `~/.omp`; read it and copy from it.
 
@@ -16,13 +16,13 @@ Never copy a skill you have not read in full. Never modify the installed origina
 
 Do this before writing anything. A skill whose license you cannot establish is excluded, not adapted.
 
-1. Locate the installed source and its upstream. `~/.agents/.skill-lock.json` records `sourceUrl` and `skillPath` for skills installed through the skills CLI; plugin caches keep a `.claude-plugin/plugin.json` next to the source.
+1. Locate the installed source and its upstream. `~/.agents/.skill-lock.json` records `sourceUrl` and `skillPath` for skills installed through the skills CLI; plugin caches keep either a root Agent Plugins `plugin.json` or a host manifest such as `.claude-plugin/plugin.json` next to the source.
 2. Record the license actually shipped with the component. When the installed copy has no license file, read the upstream repository's `LICENSE` and record that you did.
 3. Compute `shasum -a 256` of every installed source file you read, so a later diff can show upstream drift.
 4. Add a component to `audit.json` with `decision`, `localPath`, `skillName`, `upstream` (`project`, `url`, `path`, `installedAt`, `sha256`), `license` (`spdx`, `holder`, `text`, `evidence`), `adaptations`, and `guardrails`. Copy the shape of an existing `included` component.
 5. Add a section to `NOTICE` for `skills/s1-<name>/`: upstream, copyright holder, license file, and a `Modifications:` list. Apache-2.0 material requires this list (section 4(b)). CC BY-SA material stays CC BY-SA; say so in the skill and do not relicense it.
 6. If the license text is not yet in `licenses/`, add it as `licenses/<SPDX>-<owner>-<repo>.txt`.
-7. Update the `license` field in `package.json` and `.claude-plugin/plugin.json` if a new SPDX identifier joins the `AND` expression.
+7. Update the `license` field in `package.json`, root `plugin.json`, and `.claude-plugin/plugin.json` if a new SPDX identifier joins the `AND` expression.
 
 Record also what you deliberately did not copy and why, as the existing components do for `grill-me` and `jev-review`.
 
@@ -87,7 +87,7 @@ Create `skills/s1-<name>/SKILL.md`:
 
 - Frontmatter: `name: s1-<name>` (equal to the directory name), a plain-string `description` that keeps the original trigger conditions and adds when the Jev pass applies, and `license` with the upstream SPDX identifier.
 - Keep the original procedure. Rewrite only what the migration requires: dropped companion dependencies, the `s1-` name, and en-US instructions. Target-language examples, quoted patterns, and copyright names stay literal.
-- Add one section, `## Jev <what it judges> (advisory)`, placed at the step where the judgment belongs. It contains, in this order: `Read ../jev-advisory.md first`; the `job.json` state shape as a JSON block matching the pack header field for field; both host commands from `../jev-advisory.md` for the new pack; how to read the result (`mode`, `unknown`, `leans yes` / `leans no` / `unclear`); the hard limits that apply to this skill; what is sent to the third party and the instruction to ask before the first live run; and the exit-3 fallback.
+- Add one section, `## Jev <what it judges> (advisory)`, placed at the step where the judgment belongs. It contains, in this order: `Read ../jev-advisory.md first`; the `job.json` state shape as a JSON block matching the pack header field for field; all host commands from `../jev-advisory.md` for the new pack; how to read the result (`mode`, `unknown`, `leans yes` / `leans no` / `unclear`); the hard limits that apply to this skill; what is sent to the third party and the instruction to ask before the first live run; and the exit-3 fallback.
 - End with an attribution line: `Adapted from <upstream> by <holder> (<SPDX>). See ../../NOTICE and ../../audit.json.`
 
 If the original keeps a large reference catalog, split it into `skills/s1-<name>/references/` and copy it verbatim, as `s1-humanizer` does.

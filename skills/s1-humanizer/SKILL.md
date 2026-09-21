@@ -81,7 +81,7 @@ Then take the passages where the question is about meaning, not characters, and 
 # Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" humanizer --state job.json --json
 
-# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+# OpenAI Codex or Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
 (cd "<skill-directory>" && node "../../src/cli.mjs" humanizer --state job.json --json)
 ```
 

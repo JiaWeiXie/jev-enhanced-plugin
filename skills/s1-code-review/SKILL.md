@@ -119,7 +119,7 @@ files out.
 # Claude Code
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" review-findings --state job.json --json
 
-# Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
+# OpenAI Codex or Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
 (cd "<skill-directory>" && node "../../src/cli.mjs" review-findings --state job.json --json)
 ```
 

@@ -15,8 +15,5 @@
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "jev": "node src/cli.mjs"
-  },
-  "dependencies": {
-    "@typesafe-ai/sdk": "0.6.0"
   }
 }

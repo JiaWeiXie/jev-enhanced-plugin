@@ -1,6 +1,6 @@
 # jev-enhanced-plugin
 
-A Claude Code and Oh My Pi plugin with six judgment-bearing skills. Each one is a skill already in use plus a single addition: a typed judgment from [TypeSafe](https://typesafe.ai) Jev (System One) at the points where the skill previously relied on the agent's own impression. A seventh skill, `s1-migrate-skill`, is the procedure for bringing further skills in.
+An [Agent Plugin](https://agent-plugins.org/) for OpenAI Codex, Claude Code, and Oh My Pi with six judgment-bearing skills. Each one is a skill already in use plus a single addition: a typed judgment from [TypeSafe](https://typesafe.ai) Jev (System One) at the points where the skill previously relied on the agent's own impression. A seventh skill, `s1-migrate-skill`, is the procedure for bringing further skills in.
 
 Jev output here is advisory. It never approves a change, never removes a finding, and never decides anything on the user's behalf. Anything a program can check exactly (string matches, dependency graphs, diff boundaries) is checked in code and never sent to a model.
 
@@ -21,6 +21,19 @@ Every skill keeps its original procedure. The pack runs alongside it and adds pr
 
 `s1-migrate-skill` is the procedure for bringing another skill into this plugin: license audit, deciding which steps become judgments and which stay code, the pack, the adapted `SKILL.md`, tests, and documentation. It has no pack of its own. Its `references/pack-template.mjs` is the starting point for a new pack.
 ## Install
+
+Each host reads the manifest it knows: Codex loads the portable `plugin.json` at the repository root, while Claude Code and Oh My Pi read their own marketplace catalogs under `.claude-plugin/` and `.omp-plugin/`. All three discover the same seven skills under `skills/`.
+
+### OpenAI Codex
+
+Add this GitHub repository as a marketplace, then install its plugin:
+
+```bash
+codex plugin marketplace add JiaWeiXie/jev-enhanced-plugin
+codex plugin add jev-enhanced-plugin@jev-enhanced-plugin
+```
+
+Restart an existing Codex session after installation so the `s1-` skills become available.
 
 ### Claude Code
 
@@ -113,4 +126,4 @@ The pattern catalogs in both humanizer skills derive from Wikipedia's ["Signs of
 
 ### Runtime dependency
 
-[`@typesafe-ai/sdk`](https://www.npmjs.com/package/@typesafe-ai/sdk) 0.6.0 is the only runtime dependency; it is installed from npm under its own license and is not vendored here. Using it requires a TypeSafe account and sends the state you pass to a pack to the TypeSafe API. Packs send only the text placed in `--state`. Decide what goes in there accordingly.
+[`@typesafe-ai/sdk`](https://www.npmjs.com/package/@typesafe-ai/sdk) 0.6.0 is vendored at `src/vendor/typesafe-sdk.mjs` so Git marketplace installations work without an install hook. It remains MIT-licensed by TypeSafe; its license is `licenses/MIT-typesafe-ai-sdk.txt` and its exact source hash is recorded in `audit.json`. Using it requires a TypeSafe account and sends the state you pass to a pack to the TypeSafe API. Packs send only the text placed in `--state`. Decide what goes in there accordingly.

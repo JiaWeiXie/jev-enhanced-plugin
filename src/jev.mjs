@@ -1,4 +1,4 @@
-import { TypeSafeClient, noul as makeNoul, choice as makeChoice, score as makeScore } from '@typesafe-ai/sdk';
+import { TypeSafeClient, noul as makeNoul, choice as makeChoice, score as makeScore } from './vendor/typesafe-sdk.mjs';
 
 export const DEFAULT_MODEL = process.env.TYPESAFE_MODEL || 'jev-latest';
 export const noul = makeNoul;

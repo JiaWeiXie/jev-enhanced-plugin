@@ -325,6 +325,30 @@
         "evidence": "Apache License 2.0 at the plugin root."
       },
       "reason": "Excluded on benefit and scope, not on license. It is a multi-agent command workflow that wraps exploration, architecture, and review; its review leg overlaps the code-review skill already included here, and vendoring the whole workflow would pull in three more agent definitions for no added judgment."
+    },
+    {
+      "id": "typesafe-sdk-runtime",
+      "decision": "included",
+      "localPath": "src/vendor/typesafe-sdk.mjs",
+      "upstream": {
+        "project": "@typesafe-ai/sdk 0.6.0",
+        "author": "TypeSafe",
+        "path": "dist/index.mjs",
+        "installedAt": "node_modules/@typesafe-ai/sdk/dist/index.mjs",
+        "sha256": "bbb851dfe375c586c5bee3c082a04ab71882813dde39df0e95eaa23f30ec7012"
+      },
+      "license": {
+        "spdx": "MIT",
+        "holder": "TypeSafe",
+        "text": "licenses/MIT-typesafe-ai-sdk.txt",
+        "evidence": "MIT license shipped with @typesafe-ai/sdk 0.6.0."
+      },
+      "adaptations": [
+        "Vendored the exact ESM runtime without modification so Git marketplace installations do not depend on an install hook."
+      ],
+      "guardrails": [
+        "Use only through src/jev.mjs; the plugin keeps its existing TypeSafe request validation and no-retry policy."
+      ]
     }
   ],
   "systemOneReference": "https://docs.typesafe.ai/concepts/system-one"
