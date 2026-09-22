@@ -55,11 +55,13 @@ function qid(id, suffix) {
  */
 export function validateState(state) {
  if (!Array.isArray(state?.questions)) return "State requires a `questions` array";
+ if (typeof state?.context !== "string") return "State requires a string `context`";
 
  const ids = new Set();
  for (const [index, question] of state.questions.entries()) {
   const at = `questions[${index}]`;
   if (!isPlainObject(question)) return `State requires \`${at}\` to be an object`;
+  if (typeof question.text !== "string") return `State requires \`${at}.text\` to be a string`;
   const id = idOf(question, index);
   if (ids.has(id)) return `State requires unique question ids (\`${id}\` repeats at \`${at}\`)`;
   ids.add(id);

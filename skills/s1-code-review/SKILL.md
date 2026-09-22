@@ -1,34 +1,40 @@
 ---
 name: s1-code-review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
+description: Review a working tree, PR, branch, or fixed-point change set against repository standards and requested behavior. Use when the user asks for a code review, PR or branch review, review of uncommitted work, or review since a commit, tag, branch, or merge-base.
 license: MIT
 ---
 
-Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
+Two-axis review of a selected change set:
 
 - **Standards**: does the code conform to this repo's documented coding standards?
-- **Spec**: does the code faithfully implement the originating issue / spec?
+- **Spec**: does the code faithfully implement the originating issue or spec?
 
-Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
+Both axes run as **parallel sub-agents**, then this skill aggregates their findings.
 
 ## Process
 
-### 1. Pin the fixed point
+### 1. Select and capture the change set
 
-Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it.
+If the user supplies a complete patch or before/after example, review that material directly. Record its limits; repository discovery is unnecessary unless the requested claims need missing context.
 
-Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
+Use the scope the user names. If they ask for uncommitted work, or ask for a review without naming a comparison, review the working tree:
 
-Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
+- Capture staged and unstaged tracked changes with `git diff HEAD`.
+- List untracked, non-ignored files with `git ls-files --others --exclude-standard`; append a `git diff --no-index -- /dev/null <file>` patch for each relevant file.
+- Treat the combined patch as the review material. Stop if it is empty. There is no commit range to infer a spec from; use a user-supplied spec or an existing repository source.
+
+For a PR, resolve its actual base and head through the repository tracker; do not assume the local `HEAD` is the PR head. For a named commit, branch, tag, or merge-base, resolve the reference and use local `HEAD` as the head unless the user specifies another. Capture `git diff <base>...<head>` and `git log <base>..<head> --oneline`. The three-dot patch compares from the merge-base. A bad reference stops the review.
+
+Finish scope selection with the exact target, complete captured patch, and any excluded or unavailable material recorded. An empty patch ends with a no-changes report.
 
 ### 2. Identify the spec source
 
-Look for the originating spec, in this order:
+Use the first available source, in this order:
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.). Fetch them with whatever issue-tracker access this repo already has: a documented workflow under `docs/`, a configured CLI (`gh`, `glab`), or a URL the user gives you. If none is available, treat the issue as unfetched and say so rather than guessing at its contents.
-2. A path the user passed as an argument.
-3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+1. Requirements in the current conversation, or a spec path, issue, or URL the user supplied.
+2. Issue references in the relevant commit messages (for a fixed-point review). Fetch them through the repository's documented workflow or configured tracker CLI; if unavailable, say it was not fetched rather than guessing.
+3. A file under `docs/`, `specs/`, or `.scratch/` that matches the branch or feature.
+4. If no source is available, continue the Standards review and mark Spec as unavailable. Ask for clarification only when competing sources or ambiguous requirements would change the review.
 
 ### 3. Identify the standards sources
 
@@ -62,27 +68,21 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 
 ### 4. Spawn both sub-agents in parallel
 
-**Standards sub-agent prompt** should include:
+Give each sub-agent the **complete review patch**, a short target summary (working tree or `<fixed-point>...HEAD`), and the relevant commit list when the target has one. Do not give a command in place of the patch; untracked working-tree files have no normal commit diff.
 
-- The full diff command and commit list.
-- The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full (the sub-agent has no other access to it).
-- The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls: documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
+**Standards sub-agent prompt** also includes the standards-source files from step 3 and the full smell baseline above. Ask it to report every grounded finding, per file/hunk: (a) each documented-standard violation, citing the source file and rule; and (b) each baseline smell with the quoted hunk and concrete maintenance consequence. Mark documented breaches separately from judgement calls; the repo overrides the baseline. Skip tooling-enforced matters. Be concise without omitting findings.
 
-**Spec sub-agent prompt** should include:
+**Spec sub-agent prompt** also includes the fetched spec text. Ask it to report every grounded finding: (a) missing or partial requirements; (b) unrequested behavior; and (c) apparently implemented requirements whose implementation is wrong. Quote the relevant spec line for each finding. Be concise without omitting findings.
 
-- The diff command and commit list.
-- The path or fetched contents of the spec.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
+Both briefs require: read tests that cover the changed behavior, including unchanged tests. Find them by changed symbols and file names. A missing test change is not evidence of no coverage; report a missing test only after searching and state where you searched. If no spec is available, do not spawn the Spec sub-agent; retain that fact for aggregation.
 
-If the spec is missing, skip the Spec sub-agent and note this in the final report.
-
-Both briefs carry the same instruction about tests: "Read the tests that cover the changed behavior, including tests the diff does not touch. Find them by searching the test tree for the changed symbols and file names. A behavior missing from the diff's test changes is not evidence that it is untested; only report a missing test after you have looked and found none, and say where you looked."
+Require each active reviewer to account for every changed file or hunk, noting inspected material with no findings and any coverage limits. Completion is coverage of the captured change set, not reaching a word count.
 
 ### 5. Jev pass on the findings (advisory)
 
-Read `../jev-advisory.md` first; it covers the command, degradation, and the limits.
+Read `../jev-advisory.md` first. After both reports, create a task-local `job.json` at an absolute path:
 
-Once both sub-agents have reported, extract their findings into `job.json`:
+Populate it with the reports' findings and their minimal supporting text:
 
 ```json
 {
@@ -115,13 +115,7 @@ files out.
 
 `contextTests` is optional and worth filling in. Gather the tests that exercise the changed behavior, whether or not the diff touched them: search the test tree by symbol and by file name, not by what appears in the diff, and paste their text. **A test's absence from the diff does not mean the behavior is untested**, and a diff that changes no tests is not by itself a finding. If you looked and found nothing, say that you looked. When `contextTests` is absent the pack reports `testCoverage.status: "unknown"` for every finding; that is missing information, never a test gap, and you must not report it as one.
 
-```bash
-# Claude Code
-node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" review-findings --state job.json --json
-
-# OpenAI Codex or Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
-(cd "<skill-directory>" && node "../../src/cli.mjs" review-findings --state job.json --json)
-```
+Use the shared command with the `review-findings` pack. Start with `--dry-run`; remove it only after the user authorizes the minimal live payload.
 
 The pack asks whether each finding's evidence supports its claim (`evidenceSupports`),
 whether the cited standard or spec text documents the basis for it (`basisDocumented`),
@@ -148,7 +142,7 @@ Use the result only to:
 
 Never let a judgment delete a finding, filter findings by a probability threshold, truncate the list, change a finding's axis, or rank findings across axes by severity. Cross-axis reranking is the exact thing the two-axis split exists to prevent, and a threshold silently turns an advisory number into a gate.
 
-Exit code 3 with `"mode":"unavailable"` means no usable Jev result came back. Finish the review exactly as written above, report both axes in full, and say that no Jev pass ran. Never describe an unavailable run as a pass.
+If Jev is unavailable, complete all active review axes from evidence and follow the shared reporting rules.
 
 ### 6. Aggregate
 
@@ -156,7 +150,7 @@ Present the two reports under `## Standards` and `## Spec` headings, verbatim or
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
 
-If a Jev pass ran, say so in one line and mark the labels advisory. If it did not run, say that too.
+Account for every grounded finding in its original axis, report review coverage limits, and distinguish unavailable spec coverage from a clean Spec result. Follow the shared rules for reporting the actual Jev mode; dry-run and mock are not live judgments.
 
 ## Why two axes
 

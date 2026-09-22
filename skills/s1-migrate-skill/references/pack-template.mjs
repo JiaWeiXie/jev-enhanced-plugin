@@ -14,12 +14,14 @@
  *   }
  */
 
+// Replace `noul` and `readNoul` together when the designed question is Choice or Score.
 import { noul } from "../src/jev.mjs";
 import {
  ADVISORY_NOTE,
  asArray,
  asText,
  heading,
+ isPlainObject,
  judgmentAvailability,
  preview,
  readNoul,
@@ -39,11 +41,17 @@ function qid(index, suffix) {
  return `item_${index}_${suffix}`;
 }
 
-/** Message for exit 2, or null. Shape only; content is the caller's. */
+/** Message for exit 2, or null. Validate the exact state shape before building a payload. */
 export function validateState(state) {
- if (!Array.isArray(state?.items)) return "State requires an array: items";
- if (state.items.some((item) => !item || typeof item.text !== "string")) return "Every item needs a text field";
- if (typeof state.context !== "string") return "State requires text fields: context";
+ if (!Array.isArray(state?.items)) return "State requires an `items` array";
+ if (typeof state.context !== "string") return "State requires a string `context`";
+ for (const [index, item] of state.items.entries()) {
+  if (!isPlainObject(item)) return `State requires \`items[${index}]\` to be an object`;
+  if (typeof item.text !== "string") return `State requires \`items[${index}].text\` to be a string`;
+  if (item.id !== undefined && typeof item.id !== "string") {
+   return `State requires \`items[${index}].id\` to be a string when present`;
+  }
+ }
  return null;
 }
 
@@ -69,7 +77,7 @@ export function decide(response, state, _args = {}) {
  const { available, reason } = judgmentAvailability(response);
  const items = asArray(state?.items);
 
- // Same list, same order, same fields as the input.
+ // Same list, same order, same fields as the input. Do not mutate `state`.
  const annotated = items.map((item, index) => ({
   ...item,
   signals: Object.fromEntries(
@@ -83,6 +91,8 @@ export function decide(response, state, _args = {}) {
   degraded: reason,
   itemCount: items.length,
   items: annotated,
+  // This skeleton retains every item; remove this field if it is not meaningful
+  // to the migrated skill rather than inventing a second reporting convention.
   droppedItems: 0,
   advisoryOnly: true,
   note: available ? ADVISORY_NOTE : unavailableNote(reason),
@@ -104,6 +114,6 @@ export function render(result, _state) {
   );
  }
 
- blocks.push(result.note);
+ blocks.push(`${result.note}\nSignals are advisory; they do not decide what to remove, approve, or change.`);
  return report(blocks);
 }

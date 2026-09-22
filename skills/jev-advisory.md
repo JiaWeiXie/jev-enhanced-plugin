@@ -22,17 +22,21 @@ Source: https://docs.typesafe.ai/concepts/system-one
 
 ## The command
 
-Claude Code exposes the installed root as `${CLAUDE_PLUGIN_ROOT}`. Codex and Oh My Pi expose an absolute skill directory; resolve the CLI relative to that directory. Use the command for the active host:
+Resolve the installed CLI and an absolute state-file path before running it. Keep
+the working directory unchanged so state files stay in the task workspace. Start
+with a local payload preview; remove `--dry-run` only for an authorized live run.
 
 ```bash
 # Claude Code
-node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" <pack> --state job.json --json
+node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" <pack> --state /absolute/path/to/job.json --dry-run --json
 
-# OpenAI Codex or Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
-(cd "<skill-directory>" && node "../../src/cli.mjs" <pack> --state job.json --json)
+# OpenAI Codex or Oh My Pi: use the absolute skill directory supplied by the host
+node "<skill-directory>/../../src/cli.mjs" <pack> --state /absolute/path/to/job.json --dry-run --json
 ```
 
-- `job.json` is a file you write yourself, in the state shape the skill documents.
+- Use a task-local temporary file for `job.json`; do not overwrite an existing
+  file or write payloads into the installed plugin. Remove your payload after use.
+- `job.json` uses the state shape documented by the active skill.
 - `--state <file|->` points at that state file; `-` reads the state from stdin.
 - `--json` gives machine-readable output; drop it for a human-readable report.
 - `--dry-run` makes **no** inference. It prints
@@ -44,7 +48,7 @@ node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" <pack> --state job.json --json
 - There is no `--pack-arg`. Everything the pack needs goes in the state file.
 - The CLI calls the pack's `validateState(state)` before it builds any question. A
   state the pack rejects prints that message to stderr and exits 2.
-- From the repo root, `mise run jev -- <pack> --state job.json --json` runs the same CLI.
+- From the repo root, `mise run jev -- <pack> --state /absolute/path/to/job.json --dry-run --json` runs the same local preview.
 
 ## Exit codes and modes
 

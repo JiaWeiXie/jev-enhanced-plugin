@@ -97,8 +97,9 @@ may use. Never add 「我上週……」-style content to manufacture a human fe
 **Keep the real mess.** Do not sand off the original author's pauses, reservations, or uneven
 rhythm, and do not add your own digressions, asides, or half-formed thoughts either.
 
-**Be specific about feelings.** Not 「這令人擔憂」, but
-「凌晨三點沒人看著的時候，AI 代理還在不停地運轉，這讓人不安」.
+**Keep feelings specific only when the source supplies their basis.** Preserve concrete reactions
+and circumstances already in the text; do not invent a scene, experience, or motive to make the
+voice feel human.
 
 ### Before (clean but soulless)
 

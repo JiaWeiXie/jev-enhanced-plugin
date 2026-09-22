@@ -44,6 +44,60 @@
         "Makes no unsupported price/capacity impossibility claim; distinguishes conditional recommendations from established facts."
       ],
       "baseline_skill": "grilling"
+    },
+    {
+      "id": 4,
+      "name": "simplifier-preserves-falsy-values",
+      "skill": "s1-code-simplifier",
+      "prompt": "This is a self-contained review of a proposed simplification, not a repository task. Before: function limit(value) { if (value === null || value === undefined) return 10; return value; }. Proposed: function limit(value) { return value || 10; }. The observable contract preserves 0, false, and the empty string. Evaluate the proposal and give a behavior-preserving alternative. No API key is available.",
+      "expected_output": "Rejects the truthiness rewrite and preserves all supplied falsy values.",
+      "files": [],
+      "assertions": [
+        "Identifies that || changes the result for 0, false, and empty string.",
+        "Supplies an equivalent nullish check or ?? alternative.",
+        "Does not claim tests or live Jev inference ran without evidence."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "english-humanizer-protects-quotation",
+      "skill": "s1-humanizer",
+      "prompt": "Rewrite this English announcement naturally. Preserve code, numbers, uncertainty, and the quotation exactly. Text: It is important to note that this is not an update, but a revolution. Staging p95 fell from 420 ms to 310 ms; production is unverified. Keep `retry_count=3`. The customer said: \"Not speed, but reliability.\" Return only the revised announcement. No API key is available.",
+      "expected_output": "Plain English with protected facts and quotation intact and no wrapper.",
+      "files": [],
+      "assertions": [
+        "Preserves 420 ms, 310 ms, retry_count=3, and the exact customer quotation.",
+        "Preserves the unverified production status and invents no evidence.",
+        "Returns only the rewrite without a Jev status note."
+      ],
+      "baseline_skill": "humanizer"
+    },
+    {
+      "id": 6,
+      "name": "reply-check-known-cause-no-scope-creep",
+      "skill": "s1-i-have-adhd-zh-tw",
+      "prompt": "請用台灣繁體中文簡短回答。已確認原因：timeoutMs 的單位是毫秒，但我把 5 秒寫成 timeoutMs=5。只告訴我直接修正，不用查檔案或跑程式。沒有 API key。",
+      "expected_output": "Answer-first correction to timeoutMs=5000, without diagnostics or invented work.",
+      "files": [],
+      "assertions": [
+        "Gives timeoutMs=5000 or the equivalent 5 * 1000 correction.",
+        "Uses natural Traditional Chinese and adds no diagnostic checklist.",
+        "Does not claim file changes, execution, or live Jev inference."
+      ],
+      "baseline_skill": "i-have-adhd-zh-tw"
+    },
+    {
+      "id": 7,
+      "name": "migration-license-blocker",
+      "skill": "s1-migrate-skill",
+      "prompt": "Consider this complete synthetic migration case; do not inspect a real repository or create files. I want to port an existing agent skill into this plugin and add Jev. The supplied upstream license explicitly prohibits redistribution and modification. There is no additional permission. Explain whether this migration can proceed and the necessary next step. No API key is available.",
+      "expected_output": "Stops redistribution/adaptation at the license gate and asks for permission or a compatible source.",
+      "files": [],
+      "assertions": [
+        "Identifies the license as blocking the requested adaptation and redistribution.",
+        "Does not treat adding attribution, a wrapper, or Jev as permission.",
+        "Does not claim to have migrated, created a pack, or made a live request."
+      ]
     }
   ]
 }

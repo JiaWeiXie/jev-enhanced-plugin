@@ -1,10 +1,10 @@
 ---
 name: s1-grilling
-description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
+description: Grill a plan, decision, or idea through a relentless dependency-aware interview. Use when the user explicitly asks to be grilled or to stress-test their thinking.
 license: MIT
 ---
 
-Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
+Interview the user relentlessly until you reach a shared understanding. Map the work as a **design tree**: each node is either a fact to establish or a user decision, and each edge names a prerequisite.
 
 Build the dependency graph before drafting the round. Work backward from each
 decision: which facts, constraints, or choices could change the available options
@@ -15,9 +15,9 @@ user-held fact as well as a decision. A condition in a recommendation such as
 
 Compute the current frontier from this graph. Ask only nodes whose prerequisites
 are already settled, not prerequisites that you hope will be answered in the same
-round. Put blocked decisions in a short deferred list with their blocking ids; do
-not ask for an answer or a provisional choice on them. Wait for answers, update
-the ledger, then recompute the next frontier.
+round. Put blocked nodes in a short deferred list with their blocking ids; do
+not solicit a provisional choice for them. Wait for answers, update the ledger,
+then recompute the next frontier.
 
 If an architectural choice depends on unknown contractual constraints or workload,
 first ask only for those inputs. The architectural choice follows in a later round;
@@ -28,9 +28,8 @@ to delay a decision whose prerequisites are genuinely known.
 Keep observed facts, assumptions, and user decisions separate. A fixed budget does
 not establish customer count, workload, provider pricing, or feasibility. Preserve
 settled constraints. Research environment facts yourself; ask for genuinely
-user-held facts you cannot retrieve. For a fact question, say what evidence is
-needed rather than invent a recommended answer. Give a recommendation only for
-a decision whose prerequisites are settled.
+user-held facts you cannot retrieve. For a fact question, say what evidence is needed rather than invent an answer.
+Give a recommendation only for a decision whose prerequisites are settled.
 
 Before sending, inspect each proposed question and recommendation for references
 to another unanswered node. Add any missing edge, recompute the frontier, and
@@ -40,22 +39,22 @@ recommendation is not a workaround for an unresolved prerequisite.
 Format a round like so:
 
 ```
-❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+❓ **Q1** - **<question title>**: <question body, possibly multiple paragraphs and choices>
 
-➡️ <your recommended answer>
+➡️ **Evidence needed:** <what would establish the fact>
 
 ---
 
-❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+❓ **Q2** - **<question title>**: <question body, possibly multiple paragraphs and choices>
 
-➡️ <your recommended answer>
+➡️ **Recommendation:** <recommendation grounded in settled prerequisites>
 ```
 
 Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
 
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
+Finding environment facts is your job, not the user's. Obtain facts available from the filesystem, tools, codebase, or documentation before asking; while that work is pending, it remains an unsettled prerequisite, so ask only the independent frontier. Facts that only the user holds belong in the round. The decisions are the user's: put each to them and wait.
 
-The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
+The session is done when the frontier is empty: every reachable node is settled or explicitly abandoned with the user's reason, every dependency has an owner, and nothing material is silently assumed. Summarize the settled tree and ask the user to confirm the shared understanding before acting.
 
 ## Checking the frontier with Jev (advisory)
 
@@ -75,15 +74,9 @@ Before you send a round, write the tree to `job.json`:
 }
 ```
 
-```bash
-# Claude Code
-node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" grilling-frontier --state job.json --json
+Run the shared CLI command from `../jev-advisory.md` with pack `grilling-frontier`, first with `--dry-run`. After the user authorizes the minimal `context` excerpt for a live run, remove `--dry-run`; use `--json` when the result will be read programmatically.
 
-# OpenAI Codex or Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
-(cd "<skill-directory>" && node "../../src/cli.mjs" grilling-frontier --state job.json --json)
-```
-
-The frontier itself is graph arithmetic: a question is on the frontier when every id in its `prerequisites` appears in `settled`. The pack computes that literally, and you should too; no judgment is involved and none is needed.
+The frontier itself is graph arithmetic: a question is on the frontier when every id in its `prerequisites` appears in `settled`. The pack computes that literally. Its state validator requires a `questions` array; `settled` defaults to `[]`, and `context` should be the minimum relevant conversation excerpt. Do not use a judgment to alter eligibility.
 
 What the judgments add is the semantic half the graph cannot see. For each question
 that is eligible this round, the pack asks two things:
@@ -93,17 +86,13 @@ that is eligible this round, the pack asks two things:
 - `needs_user_decision`: the question asks for a preference or trade-off that is
   genuinely the user's call.
 
-Read each answer as a leaning: `leans yes` above 0.65, `leans no` at or below 0.35,
-`unclear` in between, and `unknown` when no answer came back for that question, which
-tells you only that the pack said nothing about it.
+Read each answer as a leaning using the display bands in `../jev-advisory.md`: `unknown` means no signal came back for that question. The bands are readability buckets, not decision thresholds.
 
-Treat every one of these as a prompt to reread your own question and rewrite it. Rewrite
-the wording, drop a question the context already answers, or move the question to a later
-round yourself.
+Use a signal only to reread the question: confirm whether context already answers it, rewrite it, or move it to a later round yourself. Preserve the ledger until evidence or the user's answer settles the node.
 
 The judgments never answer a question, never mark one settled, and never choose for the user. A decision leaves the frontier when the user decides it, and only then. If the pass did not run, ask the round anyway; the design tree is the skill, the judgments are a proofreader.
 
-Exit code 3 with `"mode":"unavailable"` means no usable Jev result came back: ask the round as written and say the check did not run.
+`mode: "not-needed"` means there were no open questions to ask Jev about, not that the tree is complete. Exit code 3 with `mode: "unavailable"` means no usable Jev result came back: ask the round as written and say the advisory check did not run, unless the user requested a strict output contract.
 
 ---
 

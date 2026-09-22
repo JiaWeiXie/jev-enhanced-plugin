@@ -663,22 +663,37 @@ test("grilling-frontier falls back to positional ids when questions have none", 
   assert.deepEqual(result.blocked, [{ id: "q2", unmetPrerequisites: ["q1"] }]);
 });
 
+test("grilling-frontier validates the context and question text contract", () => {
+  assert.match(
+    grillingFrontier.validateState({ questions: [{ text: "q" }] }),
+    /string `context`/,
+  );
+  assert.match(
+    grillingFrontier.validateState({ questions: [{}], context: "c" }),
+    /`questions\[0\]\.text`/,
+  );
+  assert.match(
+    grillingFrontier.validateState({ questions: [{ text: 7 }], context: "c" }),
+    /`questions\[0\]\.text`/,
+  );
+});
+
 test("grilling-frontier rejects a state whose question ids collide", () => {
   assert.match(
-    grillingFrontier.validateState({ questions: [{ id: "a" }, { id: "a" }] }),
+    grillingFrontier.validateState({ questions: [{ id: "a", text: "first" }, { id: "a", text: "second" }], context: "c" }),
     /unique question ids/,
   );
   // The second question takes the positional id `q2`, which the first claims.
   assert.match(
-    grillingFrontier.validateState({ questions: [{ id: "q2" }, { text: "no id" }] }),
+    grillingFrontier.validateState({ questions: [{ id: "q2", text: "first" }, { text: "no id" }], context: "c" }),
     /unique question ids/,
   );
-  assert.match(grillingFrontier.validateState({ questions: [[]] }), /`questions\[0\]` to be an object/);
+  assert.match(grillingFrontier.validateState({ questions: [[]], context: "c" }), /`questions\[0\]` to be an object/);
   assert.match(
-    grillingFrontier.validateState({ questions: [{ id: "a", prerequisites: [7] }] }),
+    grillingFrontier.validateState({ questions: [{ id: "a", text: "q", prerequisites: [7] }], context: "c" }),
     /`questions\[0\]\.prerequisites\[0\]` to be a string/,
   );
-  assert.match(grillingFrontier.validateState({ questions: [], settled: [1] }), /`settled\[0\]`/);
+  assert.match(grillingFrontier.validateState({ questions: [], settled: [1], context: "c" }), /`settled\[0\]`/);
   assert.equal(grillingFrontier.validateState(grillingState), null);
 });
 

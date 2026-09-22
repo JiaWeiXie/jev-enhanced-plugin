@@ -1,6 +1,6 @@
 ---
 name: s1-i-have-adhd-zh-tw
-description: 'Write every reply in natural Taiwan Traditional Chinese and open with the answer, the completed result, or the next step that is genuinely required. Use this skill when replying to any user message, including coding, debugging, explanation, planning, research, and everyday conversation. When the prompt already states the cause, answer only that cause and the direct fix; do not add a diagnostic checklist or unverified hypotheses. Keep code, commands, paths, API names, error messages, and technical terms that have no natural Chinese equivalent verbatim; delete empty openers, translationese, mainland-Chinese vocabulary, repeated summaries, polite sign-offs, and instructions that hand work back to the user that the agent could do itself.'
+description: Answer in natural Taiwan Traditional Chinese (zh-TW), with the result or next action first. Use when the user requests Taiwan wording or the active response contract requires zh-TW for any reply, including coding, debugging, explanations, planning, research, and everyday conversation.
 license: MIT
 ---
 
@@ -123,46 +123,39 @@ When the rules above are not concrete enough, write like the right-hand column:
 
 | Scenario | Do not say | Say |
 |---|---|---|
-| Vague answer | 這是個有趣的方向 | 這太空。能給名字、數字、case 嗎？ |
+| Missing detail | 這是個有趣的方向 | 缺少會影響選擇的使用人數；先查現有需求。 |
 | Listing options | 有幾種思路可以走 | 我選 X，因為 Y。除非你有 Z 否則不該選 A。 |
-| No evidence | 可能會比較好 | 不會比較好。我看不到證據說 A>B。你的實際 case 是？ |
+| No evidence | 可能會比較好 | 尚無證據判斷 A 是否比 B 好；需要同條件的量測結果。 |
 | You were wrong | 讓我重新想想 | 我剛說錯了。對的是 X。原本錯在 Y。 |
 | Changed but unverified | Done! Fixed the bug. | 已改，還沒跑。現在跑 X 驗證。 |
-| Hedging instead of measuring | 應該會快很多 | 3.4s → 0.06s，實測。 |
+| Hedging instead of measuring | 應該會快很多 | 已改，尚未量測；不能宣稱更快。 |
 
 ## Safety and exceptions
 
 1. The system prompt, developer instructions, and host rules outrank this skill. On conflict, follow the higher-level requirement while keeping answer-first ordering and low-friction structure.
 2. For destructive or hard-to-reverse operations, resolve the exact target with read-only methods and preview the impact before asking for confirmation.
-3. When genuine ambiguity would change the outcome, ask exactly one blocking question.
-4. After three consecutive failures of the same shape, stop tweaking and name the assumption that is probably wrong.
+3. Resolve tool-accessible ambiguity yourself. Group only the remaining blocking questions that genuinely require the user.
+4. When the same attempt keeps failing, use the observed failures to revise the hypothesis before retrying; name missing evidence instead of guessing the cause.
 5. This response style cannot diagnose, treat, or certify ADHD in anyone.
 
 ## Jev reply check (advisory, optional)
 
 This step is optional; do not run it on every reply. It is worth running in only two cases: the draft is long and structurally complex, or the user explicitly asked for an audit of this reply. For everyday short replies, self-check against "Pre-send checklist" below; an extra round trip only slows the reply down.
 
-Read `../jev-advisory.md` first for the command, degradation behavior, and boundaries.
+Read `../jev-advisory.md` first. It is the sole source for the command, payload handling,
+live-run consent, degraded behavior, and advisory limits. Use the `reply-check` pack.
 
 When you do run it, write the draft and the original request into `job.json`:
 
 ```json
 {
-  "draft": "<準備送出的回覆全文>",
-  "request": "<使用者這一輪真正問的事>",
+  "draft": "<the draft reply or minimum relevant excerpt, in the target language>",
+  "request": "<the current user request and any necessary output constraints>",
   "banned": ["賦能", "閉環", "抓手", "底層邏輯", "——"]
 }
 ```
 
 `banned` is optional. When supplied, the CLI does the string matching in code and returns `result.literals`: the count and positions (index, line, column) of each term.
-
-```bash
-# Claude Code
-node "${CLAUDE_PLUGIN_ROOT}/src/cli.mjs" reply-check --state job.json --json
-
-# OpenAI Codex or Oh My Pi: replace the placeholder with the absolute skill directory shown by the host
-(cd "<skill-directory>" && node "../../src/cli.mjs" reply-check --state job.json --json)
-```
 
 Banned words, banned sentence patterns, the em dash `——`, parenthetical asides, and output-only wrapper text are all string matching. Check them yourself with search; do not delegate them to a model.
 
@@ -170,24 +163,16 @@ A match is a candidate, not a violation. The pack does not parse Markdown and ma
 
 The judgment covers semantic questions: does the first paragraph really lead with the answer (`answer_first`), was work the agent could do handed back to the user (`delegates_back`), does the reply cover what this turn's request actually asked for (`covers_request`), and does it add scope the user never asked for (`adds_unrequested_scope`).
 
-Boundaries:
-
-- The judgment is a hint, not an approval. Items 1 through 5 of the checklist still need your own verification.
-- The judgment does not rewrite the reply and does not decide for the user whether to accept it.
-- The probability is model output. Write it as `Jev（參考值，p=0.71）` and never treat it as a measurement.
-- With no API key, or when the request fails, check and deliver through the normal flow, state that no Jev judgment was obtained, and never fabricate a result.
-- Skip this step when the reply contains secrets, credentials, or private user data. Get the user's consent before sending anything out.
-
-Exit code 3 with `"mode":"unavailable"` means no usable Jev result came back: self-check through the normal flow, deliver, and say so when the format allows it.
-
-When the user asked for code, JSON, a command, or another explicit format only, the output contract wins: put no Jev note and no unavailability notice in the output. Say it separately, or not at all this turn.
+The pre-send checklist and output contract remain decisive. A judgment neither rewrites the
+reply nor approves it. Do not send secrets, credentials, or private user data; use the normal
+self-check instead when the minimum semantic excerpt would expose them.
 
 ## Pre-send checklist
 
 Before sending, confirm:
 
 1. The first paragraph is the answer, the completed result, or a necessary next step.
-2. Prose is natural Taiwan Traditional Chinese, technical literals are unmodified, and there are no banned words, banned sentence patterns, or em dashes.
+2. Prose follows the requested language or defaults to Taiwan Traditional Chinese; protected literals are unchanged and the vocabulary rules were checked with their stated exceptions.
 3. No work the agent could have finished was handed back to the user.
 4. Necessary detail, safety information, and the output contract are all preserved.
 5. Output-only replies carry no extra wrapper; the ending has no repeated summary, polite sign-off, or invented new task.
