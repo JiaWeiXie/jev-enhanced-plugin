@@ -1,6 +1,6 @@
 ---
 name: s1-code-simplifier
-description: Simplify code for clarity and maintainability without changing behavior. Use when the user asks to simplify or refactor code, or when another skill needs a post-change cleanup pass.
+description: Jev-checked variant of code-simplifier. Behavior-preserving cleanup of recently modified or named code (cut redundancy, flatten nesting, clarify names), verified by tests plus a TypeSafe Jev risk check for dropped cases, changed failure paths, and contract drift. Use when the user asks to simplify, clean up, tidy, de-duplicate, reduce nesting, or refactor code for readability, or to polish code written earlier in the session (簡化、整理、重構程式碼); not for new features, bug fixes, or performance work.
 license: Apache-2.0
 ---
 
@@ -27,6 +27,8 @@ Read `../jev-advisory.md` first. Build a task-local, absolute-path `job.json` co
   "contract": "<observable inputs, outputs, errors, side effects, and ordering that must not change>"
 }
 ```
+
+Fill in `contract` whenever you can. The two questions about observable behavior and the contract surface read it, so with an empty `contract` they are `not asked` and those risks stay open.
 
 Use the shared command with the `simplify-gate` pack. Start with `--dry-run`; remove it only after the user authorizes the live payload. The pack identifies places to inspect, never proves equivalence.
 

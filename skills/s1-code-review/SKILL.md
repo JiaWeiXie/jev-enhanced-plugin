@@ -1,6 +1,6 @@
 ---
 name: s1-code-review
-description: Review a working tree, PR, branch, or fixed-point change set against repository standards and requested behavior. Use when the user asks for a code review, PR or branch review, review of uncommitted work, or review since a commit, tag, branch, or merge-base.
+description: Jev-checked variant of code-review. Two-axis review (repo Standards + Spec) of a working tree, PR, branch, or diff since a commit, tag, or merge-base, where TypeSafe Jev checks each finding's quoted evidence and its basis on its own axis, and never drops a finding. Use when the user asks to review code, a PR, a branch, or uncommitted changes, asks "what changed since X", asks whether an implementation matches its spec or issue, or says 幫我 review 或 code review; prefer it over an unaugmented code-review skill. Not for fixing bugs or writing code.
 license: MIT
 ---
 
@@ -102,12 +102,14 @@ Populate it with the reports' findings and their minimal supporting text:
 }
 ```
 
-Jev reads the state and nothing else. It cannot open a file, resolve a path, or run a
-command, so every field that is supposed to be evidence must contain the actual text.
-A command line, a path, a file name, or a summary is provenance, and the state carries
-none of it: keep the diff command and the spec path in your report text, where a reader
-can trace an excerpt back. Paste the minimum that answers the question; leave whole
-files out.
+Jev cannot open a file, resolve a path, or run a command, so every field that is
+supposed to be evidence must contain the actual text. The pack sends Jev only each
+finding's `claim` and `evidence`, the candidate excerpts (inside the options of the
+location question), and the non-empty `standards`, `spec`, and `contextTests`. `diff`,
+`axis`, `file`, and `line` feed the code checks below and never leave the machine;
+`--dry-run` shows the exact payload. A command line, a path, or a summary is provenance:
+keep the diff command and the spec path in your report text, where a reader can trace
+an excerpt back. Paste the minimum that answers the question; leave whole files out.
 
 `axis` is `"standards"` or `"spec"`. Every finding needs `evidence`: the quoted hunk or spec line the sub-agent cited. A finding whose evidence you cannot paste as text goes into the report unjudged, and you say why. Never substitute a path to make a finding judgeable.
 
@@ -117,11 +119,24 @@ files out.
 
 Use the shared command with the `review-findings` pack. Start with `--dry-run`; remove it only after the user authorizes the minimal live payload.
 
-The pack asks whether each finding's evidence supports its claim (`evidenceSupports`),
-whether the cited standard or spec text documents the basis for it (`basisDocumented`),
-and, when `contextTests` is supplied, whether a test already covers the behavior
-(`coveredByTests`). A separate Choice picks which supplied candidate excerpt the finding
-is really about, or answers `noMatch`.
+Before asking anything, the pack checks in code whether each finding's `evidence`
+appears verbatim in `diff` (`evidenceQuoted`: `in diff`, `not in diff`, or `unknown`).
+`not in diff` is not a fabrication verdict: the quote may be unchanged code from a
+touched file, so open that file and confirm it.
+
+The pack then asks one Choice per finding with `evidence`: how the evidence relates to
+the claim (`evidenceRelation`: `supports`, `contradicts`, or `says_nothing`, with its
+confidence). `evidenceSupports` is the `supports` probability from that distribution;
+read the selected label, not that number against the Noul bands. It asks whether the
+finding's **own axis** documents its basis (`basisDocumented`): a Standards finding is
+checked against `standards` only and a Spec finding against `spec` only, so a rule on
+one axis never props up a finding on the other. When `contextTests` is supplied, it asks
+whether a test already covers the behavior (`coveredByTests`). A separate Choice picks
+which supplied candidate excerpt the finding is really about, or answers `noMatch`.
+
+A finding with empty `evidence`, or whose axis text is empty, gets `notAsked` entries
+instead of those signals. It is still reported in full; say that it went unjudged and
+why.
 
 Whether a finding sits inside the change is arithmetic on the hunk headers of `diff`, so
 the pack computes it and never asks: every finding carries
@@ -133,6 +148,8 @@ the finding is right.
 Use the result only to:
 
 - label a finding inside its own axis (`Jev (advisory, p=0.34): evidence may not support this claim`);
+- when `evidenceRelation` is `contradicts`, reread the quoted code against the claim before
+  reporting; the finding stays in its axis whatever you conclude, and a rewrite is yours to make;
 - attach the chosen excerpt to the finding so the reader can check it;
 - report `withinDiff` and the coverage reading beside the finding. The coverage wording
   is a leaning: `may lack a covering test` stays exactly that wording, and never becomes

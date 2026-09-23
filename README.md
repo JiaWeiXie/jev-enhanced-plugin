@@ -8,14 +8,26 @@ Jev output here is advisory. It never approves a change, never removes a finding
 
 | Skill | Judgment pack | What the pack answers |
 | --- | --- | --- |
-| `s1-code-review` | `review-findings` | Per finding: does the quoted evidence support the claim, is the basis documented, is it covered by a supplied test, and which supplied code excerpt is the best citation (`noMatch` allowed). Diff membership is computed in code from the finding's file and line. |
+| `s1-code-review` | `review-findings` | Per finding: does the quoted evidence support, contradict, or say nothing about the claim; does the finding's own axis (`standards` or `spec`) document its basis; is it covered by a supplied test; and which supplied code excerpt is the best citation (`noMatch` allowed). Diff membership and verbatim quoting are computed in code and never sent. |
 | `s1-code-simplifier` | `simplify-gate` | Risk that a rewrite changes observable behavior, drops a handled case, changes the contract surface, or changes failure paths. |
 | `s1-grilling` | `grilling-frontier` | Whether a question is already answered by context and whether it needs a user decision. Prerequisite eligibility is computed from the dependency graph in code, not judged. |
-| `s1-humanizer` | `humanizer` | Per passage: carries information, restates another passage, claims more than the context supports, reads naturally for the locale. |
+| `s1-humanizer` | `humanizer` | Per passage: states anything specific, restates another passage, claims more than the context supports, would still be reworded by an editor in the target language. |
 | `s1-humanizer-zh-tw` | `humanizer` | Same pack, `zh-TW` locale. |
-| `s1-i-have-adhd-zh-tw` | `reply-check` | Whether a draft answers first, delegates work back to the user, covers the request, and adds unrequested scope. |
+| `s1-i-have-adhd-zh-tw` | `reply-check` | Whether a draft's opening paragraph answers, whether it delegates work back to the user, whether it covers each request item, and whether it adds unrequested scope. |
 
 Every skill keeps its original procedure. The pack runs alongside it and adds probabilities the human reader can use or ignore.
+
+### How the packs prompt Jev
+
+The packs follow TypeSafe's [patterns](https://docs.typesafe.ai/patterns), [cookbooks](https://docs.typesafe.ai/cookbooks), and [jev-1.13 jaggedness notes](https://docs.typesafe.ai/model-jaggedness/jev-1.13):
+
+- Each pack sends a model state built by its own `buildState`, not the job file. Code-only fields (diffs, watch lists, graph ids, paths, line numbers) never leave the machine.
+- Reference material comes first in the state and the material under judgment after it.
+- Every question is one narrow judgment that names the state field it reads. Anything code can compute is computed first.
+- A question whose field is empty is not asked, and is reported as `not asked` rather than as a reading.
+- All questions for one job go out in one request.
+
+Several questions were reworded after live checks on synthetic labeled cases, where the old wording missed and the new one did not. These were small spot checks, not a benchmark, and they support no claim about Jev's accuracy on your data.
 
 ## Adding a skill
 
@@ -62,7 +74,17 @@ omp plugin install jev-enhanced-plugin@jev-enhanced-plugin --scope user
 
 For development, `omp plugin link /absolute/path/to/jev-enhanced-plugin` links the current checkout globally so edits take effect immediately.
 
-The seven skills are discovered under their `s1-` names. Restart an existing Oh My Pi session after installing or linking the plugin.
+The seven skills are discovered under their `s1-` names. Because the repository root includes the Agent Plugins 1.0 `plugin.json`, Oh My Pi routes `skills/` through the `agent-plugins` discovery provider: keep `agent-plugins` enabled in `~/.omp/agent/config.yml`, or add `~/.omp/plugins/node_modules/jev-enhanced-plugin/skills` to `skills.customDirectories` if `agent-plugins` is disabled. To prevent upstream copies from competing for triggers, add `skill:code-review`, `skill:grilling`, `skill:humanizer`, `skill:humanizer-zh-tw`, and `skill:i-have-adhd-zh-tw` to `disabledExtensions`. Restart an existing Oh My Pi session after changing these settings.
+
+### Avoiding duplicate skills
+
+Five of these skills adapt upstream skills you may already have installed: `code-review`, `grilling`, `humanizer`, `humanizer-zh-tw`, and `i-have-adhd-zh-tw`. When both copies are listed, the host picks between two near-identical descriptions, and the `s1-` copy often loses. Turn the upstream copy off in the host you use:
+
+- **Claude Code**: add `"skillOverrides": { "code-review": "off", "grilling": "off", "humanizer": "off", "humanizer-zh-tw": "off", "i-have-adhd-zh-tw": "off" }` to `~/.claude/settings.json`, or cycle them in the `/skills` menu.
+- **OpenAI Codex**: add one `[[skills.config]]` table per upstream skill to `~/.codex/config.toml`, for example `name = "humanizer"` and `enabled = false`.
+- **Oh My Pi**: see `disabledExtensions` above.
+
+Instructions that name a skill directly, such as a `CLAUDE.md` or `AGENTS.md` line saying "use the `humanizer-zh-tw` skill for every response", override descriptions. Point them at the `s1-` names, or the upstream copy keeps winning.
 
 ## Requirements
 
@@ -85,7 +107,7 @@ Flags: `--state <file|->` (`-` reads the state from stdin), `--dry-run` (build q
 
 Exit codes: `0` success, `2` input error, `3` no judgment available. Exit 3 also sets `"mode": "unavailable"` in the JSON body, so a skill can distinguish a missing service from a negative answer.
 
-Each pack's `--state` shape is documented at the top of its file in `packs/`. State text is judged as given: a path or a shell command placed in a code field is provenance, and the packs judge only the text supplied.
+Each pack's `--state` shape is documented at the top of its file in `packs/`. That shape is the job file; the state the model actually receives is what the pack's `buildState` derives from it, and `--dry-run` prints that under `request.state`. State text is judged as given: a path or a shell command placed in a code field is provenance, and the packs judge only the text supplied.
 
 ## Failure behavior
 
@@ -96,6 +118,8 @@ A missing key, a network failure, an HTTP error, or a malformed answer all resol
 `evals/evals.json` holds three synthetic cases comparing each adapted skill against its original: two-axis review retention, `zh-TW` rewriting with evidence preserved, and grilling with unsettled prerequisites. Results live outside this repository in the workspace directory.
 
 These are single runs on synthetic inputs. They measure instruction-following only, and they support no claim about Jev accuracy, calibration, or speed.
+
+The live wording checks described under *How the packs prompt Jev* are separate: a few synthetic labeled cases per question, sent to `jev-latest` to compare candidate wordings and state orders. They were used to choose between wordings, they are not kept in this repository, and the same caveat applies.
 
 ## License
 
@@ -126,4 +150,4 @@ The pattern catalogs in both humanizer skills derive from Wikipedia's ["Signs of
 
 ### Runtime dependency
 
-[`@typesafe-ai/sdk`](https://www.npmjs.com/package/@typesafe-ai/sdk) 0.6.0 is vendored at `src/vendor/typesafe-sdk.mjs` so Git marketplace installations work without an install hook. It remains MIT-licensed by TypeSafe; its license is `licenses/MIT-typesafe-ai-sdk.txt` and its exact source hash is recorded in `audit.json`. Using it requires a TypeSafe account and sends the state you pass to a pack to the TypeSafe API. Packs send only the text placed in `--state`. Decide what goes in there accordingly.
+[`@typesafe-ai/sdk`](https://www.npmjs.com/package/@typesafe-ai/sdk) 0.6.0 is vendored at `src/vendor/typesafe-sdk.mjs` so Git marketplace installations work without an install hook. It remains MIT-licensed by TypeSafe; its license is `licenses/MIT-typesafe-ai-sdk.txt` and its exact source hash is recorded in `audit.json`. Using it requires a TypeSafe account and sends a filtered version of the state you pass to a pack to the TypeSafe API. Packs send only what their `buildState` keeps from `--state`; run with `--dry-run` to see exactly that payload before a live call.

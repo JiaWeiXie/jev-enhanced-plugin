@@ -20,6 +20,11 @@
  *
  * `id` is optional; a question without one gets the positional id `q<n>`, which
  * is what `prerequisites` and `settled` must then use.
+ *
+ * The model reads `buildState(state)`: the text of the askable questions only,
+ * renumbered in order, plus `context`. Ids, prerequisites, settled and blocked
+ * questions are graph bookkeeping for code and are never sent. The
+ * already-answered question is asked only when `context` has text.
  */
 
 import { noul } from "../src/jev.mjs";
@@ -82,29 +87,69 @@ export function validateState(state) {
  return null;
 }
 
-export function buildQuestions(state, _args = {}) {
- const questions = asArray(state?.questions);
+/**
+ * The open questions whose prerequisites are all settled, in state order. Settled
+ * questions need no advice; blocked ones are not asked, because their signals
+ * would be stale by the time a prerequisite is settled and `context` changes.
+ */
+function askable(state) {
  const settled = new Set(asArray(state?.settled));
+ return asArray(state?.questions)
+  .map((question, index) => ({ question, id: idOf(question, index) }))
+  .filter(({ question, id }) => {
+   if (settled.has(id)) return false;
+   const prerequisites = asArray(question?.prerequisites).filter((p) => typeof p === "string");
+   return prerequisites.every((p) => settled.has(p));
+  });
+}
+
+function hasContext(state) {
+ return typeof state?.context === "string" && state.context.trim() !== "";
+}
+
+/** What the model reads: `context` when it has text, then askable question text, renumbered. */
+export function buildState(state) {
+ const out = {};
+ if (hasContext(state)) out.context = state.context;
+ out.questions = askable(state).map(({ question }) => question.text);
+ return out;
+}
+
+export function buildQuestions(state, _args = {}) {
+ const withContext = hasContext(state);
  const out = {};
 
- questions.forEach((question, index) => {
-  const id = idOf(question, index);
-  if (settled.has(id)) return; // already answered; nothing to advise on
-  const at = `\`questions[${index}].text\``;
+ askable(state).forEach(({ id }, position) => {
+  const at = `\`questions[${position}]\``;
 
-  out[qid(id, "already_answered_in_context")] = noul(
-   `\`context\` already contains the user's answer to ${at}.`,
+  if (withContext) out[qid(id, "already_answered_in_context")] = noul(
    {
-    true: `The user has stated, in \`context\`, a position that answers ${at}; asking again would repeat it back to them.`,
-    false: `\`context\` touches the topic at most indirectly; ${at} is still genuinely open.`,
+    question: `Does \`context\` already contain the user's answer to ${at}?`,
+    compare: [at, "`context`"],
+    focus: "Look for a position the user stated, not a topic the conversation mentioned.",
+   },
+   {
+    true: {
+     what: `The user stated, in \`context\`, a position that answers ${at}; asking again would repeat it back`,
+    },
+    false: {
+     what: `${at} is still open`,
+     not_for: "A related remark that touches the topic without answering the question",
+    },
    },
   );
 
   out[qid(id, "needs_user_decision")] = noul(
-   `${at} asks for a preference or trade-off that only the user can settle, rather than something derivable from \`context\`.`,
    {
-    true: "Answering requires the user's priorities, taste, risk appetite, or external knowledge.",
-    false: "The answer follows from `context`, the codebase, or documentation, so it can be worked out instead of asked.",
+    question: `Does ${at} ask for a preference or trade-off that only the user can settle?`,
+    ...(withContext ? { compare: [at, "`context`"] } : { inspect: at }),
+    focus: "Separate the user's priorities from facts that code, documentation, or context can establish.",
+   },
+   {
+    true: { what: "Answering requires the user's priorities, taste, risk appetite, or knowledge only they hold" },
+    false: {
+     what: "The answer is a fact that the conversation, the codebase, or documentation can establish",
+    },
    },
   );
  });
@@ -114,6 +159,7 @@ export function buildQuestions(state, _args = {}) {
 
 export function decide(response, state, _args = {}) {
  const { available, reason } = judgmentAvailability(response);
+ const withContext = hasContext(state);
 
  const rawQuestions = asArray(state?.questions);
  const settledIds = asArray(state?.settled).filter((id) => typeof id === "string");
@@ -132,6 +178,7 @@ export function decide(response, state, _args = {}) {
   const isSettled = settled.has(id);
   const eligible = !isSettled && unmet.length === 0;
 
+  const notAsked = !isSettled && eligible && !withContext ? ["alreadyAnsweredInContext: `context` is empty"] : [];
   const signals = isSettled
    ? { alreadyAnsweredInContext: null, needsUserDecision: null }
    : {
@@ -150,6 +197,8 @@ export function decide(response, state, _args = {}) {
    status: isSettled ? "settled" : eligible ? "ready" : "blocked",
    eligible,
    signals,
+   // Questions the state could not support, so none was sent. Not a reading.
+   notAsked,
    advisory: advisoryFor(isSettled, eligible, signals),
   };
  });
@@ -217,7 +266,8 @@ export function render(result, _state) {
      ["already answered in context", q.signals.alreadyAnsweredInContext],
      ["needs user decision", q.signals.needsUserDecision],
     ]);
-  return [head, blockedBy, unknown, signals, `   note: ${q.advisory.join("; ")}`].filter(Boolean).join("\n");
+  const notAsked = q.notAsked.length > 0 ? `   not asked: ${q.notAsked.join("; ")}` : "";
+  return [head, blockedBy, unknown, signals, notAsked, `   note: ${q.advisory.join("; ")}`].filter(Boolean).join("\n");
  };
 
  blocks.push(result.questions.map(line).join("\n\n"));

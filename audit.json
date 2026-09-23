@@ -35,7 +35,9 @@
         "Added a tests instruction to both sub-agent briefs: read covering tests whether or not the diff touches them; absence from the diff is not evidence of a missing test.",
         "Kept the two-axis split, the Fowler smell baseline, the parallel sub-agents, and the no-reranking rule unchanged.",
         "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
-        "Require demonstrated maintenance consequences for smells and distinguish verified runtime behavior from unexecuted reasoning."
+        "Require demonstrated maintenance consequences for smells and distinguish verified runtime behavior from unexecuted reasoning.",
+        "Rewrote the description to lead with \"Jev-checked variant of code-review\", name its trigger phrases (including 幫我 review), and exclude bug fixing.",
+        "The Jev pass checks each finding's basis against its own axis only (`standards` for Standards findings, `spec` for Spec findings), sends no diff, paths, or line numbers, and reports findings without evidence or axis text as not asked."
       ],
       "designReferences": [
         "jev-review"
@@ -68,7 +70,9 @@
         "Body copied unchanged.",
         "Added an advisory Jev pass over the frontier via the `grilling-frontier` pack.",
         "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
-        "Keep observed facts, assumptions, and settled user constraints separate; defer dependent questions and avoid unsupported pricing or capacity claims."
+        "Keep observed facts, assumptions, and settled user constraints separate; defer dependent questions and avoid unsupported pricing or capacity claims.",
+        "Rewrote the description to lead with \"Jev-checked variant of grilling\" and add trigger phrases, including 幫我挑毛病 and 質疑我的計畫.",
+        "The Jev pass sends only `context` and the text of eligible questions, and skips the already-answered question when `context` is empty."
       ],
       "guardrails": [
         "The frontier itself is graph arithmetic and is computed, not judged.",
@@ -123,7 +127,9 @@
         "Split the skill: SKILL.md keeps the model, the workflow, the voice rules, and the return modes; the 25-pattern catalog and the 'When not to act' section are copied verbatim into references/patterns.md.",
         "Did not copy the companion repository files (README.md, AGENTS.md, .claude-plugin/, .github/, agents/openai.yaml, scripts/validate-package.py). scripts/validate-package.py needs Python, which this JavaScript-only plugin does not require.",
         "Added an advisory Jev pass over draft passages via the `humanizer` pack, after the literal string checks.",
-        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data."
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
+        "Rewrote the description to lead with \"Jev-checked variant of humanizer for English\" and point Traditional Chinese text to s1-humanizer-zh-tw.",
+        "The Jev pass documents which questions depend on `context` or on a second passage, and reports skipped ones as not asked."
       ],
       "guardrails": [
         "Dashes, curly quotes, emoji, bold labels, title case, and the watched phrases are string matches done in code, not judged.",
@@ -169,7 +175,9 @@
         "Did not copy the bundled text-watermark-cleaner-zh-tw folder or README.md.",
         "Added an advisory Jev pass over rewritten passages via the `humanizer` pack.",
         "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
-        "Translated instructions and pattern explanations into en-US; retained Chinese examples as target-language data, added navigation and explicit CC BY-SA attribution."
+        "Translated instructions and pattern explanations into en-US; retained Chinese examples as target-language data, added navigation and explicit CC BY-SA attribution.",
+        "Rewrote the description to lead with \"Jev-checked variant of humanizer-zh-tw\", add Traditional Chinese trigger phrases (潤稿, 改寫, 去 AI 味, 修翻譯腔, 讓文字更自然), and point chat replies to s1-i-have-adhd-zh-tw.",
+        "The Jev pass documents which questions depend on `context` or on a second passage, and reports skipped ones as not asked."
       ],
       "guardrails": [
         "Same as humanizer, plus: a judgment says nothing about watermark state."
@@ -201,7 +209,9 @@
       "adaptations": [
         "Translated instructional prose into en-US while retaining all core Taiwan Traditional Chinese response rules, calibration examples, safety exceptions, and pre-send checks.",
         "Added one section: an advisory Jev pass over the drafted reply via the `reply-check` pack, placed before the pre-send checklist.",
-        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data."
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
+        "Rewrote the description to lead with \"Jev-checked variant of i-have-adhd-zh-tw\" and add Traditional Chinese trigger phrases.",
+        "The Jev pass accepts optional `requestItems`, judges coverage per item, never sends the `banned` list, and judges the opening paragraph (text before the first blank line) on its own."
       ],
       "guardrails": [
         "Banned words, banned sentence shapes, the em dash, and output-only wrappers are string matches done in code.",
@@ -232,7 +242,9 @@
         "Generalized the standards section. Upstream hardcodes one project's CLAUDE.md rules; here the repo's own documented standards win, and those rules are listed as upstream defaults to fall back on.",
         "Added a Jev gate over the before/after pair via the `simplify-gate` pack, after the covering tests are run.",
         "Apache-2.0 requires stating changes: this entry and the NOTICE file carry that statement.",
-        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data."
+        "Added the s1- System One namespace; authored instructions are en-US. Target-language examples and copyright names remain literal data.",
+        "Rewrote the description to lead with \"Jev-checked variant of code-simplifier\", narrow the trigger to explicit cleanup requests and code written earlier in the session, and exclude features, bug fixes, and performance work.",
+        "Added a note that the observable-behavior and contract-surface checks are not asked when `contract` is empty."
       ],
       "guardrails": [
         "A judgment never certifies equivalence and never replaces the test run; a probability is not a proof.",
@@ -351,5 +363,12 @@
       ]
     }
   ],
-  "systemOneReference": "https://docs.typesafe.ai/concepts/system-one"
+  "systemOneReference": "https://docs.typesafe.ai/concepts/system-one",
+  "promptingReferences": [
+    "https://docs.typesafe.ai/concepts/state",
+    "https://docs.typesafe.ai/primitives/advanced",
+    "https://docs.typesafe.ai/patterns",
+    "https://docs.typesafe.ai/cookbooks",
+    "https://docs.typesafe.ai/model-jaggedness/jev-1.13"
+  ]
 }

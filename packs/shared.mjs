@@ -70,7 +70,7 @@ export function readNoul(response, id) {
 }
 
 /**
- * `{ choice, confidence }` for a choice question, or `null` when the answer is
+ * `{ choice, confidence, probabilities }` for a choice question, or `null` when the answer is
  * absent, names a label that was not offered, or is missing its confidence or
  * probabilities. A label outside `allowed` is a malformed answer, not a new
  * option, and a half-formed choice answer is unknown rather than a selection.
@@ -86,7 +86,7 @@ export function readChoice(response, id, allowed = null) {
  if (allowed && !allowed.includes(selected)) return null;
  if (!isUnitNumber(answer.confidence)) return null;
  if (allowed && !coversLabels(answer.probabilities, allowed)) return null;
- return { choice: selected, confidence: answer.confidence };
+ return { choice: selected, confidence: answer.confidence, probabilities: { ...answer.probabilities } };
 }
 
 /** A distribution is usable only when it scores exactly the offered labels. */

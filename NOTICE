@@ -33,6 +33,9 @@ Modifications:
   - Added an advisory Jev judgment pass over the collected findings.
   - Added an instruction to read covering tests whether or not the diff changes
     them.
+  - Rewrote the description to name the upstream skill it varies and to add
+    trigger phrases. The Jev pass checks each finding's basis against its own
+    axis only and reports findings it cannot judge as not asked.
 
 The evidence shape used by that pass (bounded candidate excerpts carrying file and
 line, an explicit noMatch answer, and covering tests supplied as context) follows the
@@ -54,6 +57,8 @@ Derived from the "grilling" skill in mattpocock/skills
 Modifications:
   - Added an advisory Jev judgment pass over the question frontier. The frontier
     computation itself stays deterministic.
+  - Rewrote the description to name the upstream skill it varies and to add
+    trigger phrases, including Traditional Chinese ones.
 
 The "grill-me" skill from the same repository is a one-line trampoline into
 "grilling" and was therefore not copied.
@@ -71,6 +76,8 @@ Modifications:
     references/patterns.md (the 25-pattern catalog and "When not to act",
     copied verbatim).
   - Added an advisory Jev judgment pass over draft passages.
+  - Rewrote the description to name the upstream skill it varies and the
+    Traditional Chinese skill to use instead.
   - Did not copy the repository's README.md, AGENTS.md, .claude-plugin/, .github/,
     agents/openai.yaml, or scripts/validate-package.py.
 
@@ -95,6 +102,9 @@ Modifications:
     which is not included here, while keeping the rule that a natural-sounding
     rewrite leaves any watermark in place.
   - Added an advisory Jev judgment pass over rewritten passages.
+  - Rewrote the description to name the upstream skill it varies, to add
+    Traditional Chinese trigger phrases, and to point replies to
+    s1-i-have-adhd-zh-tw.
 
 -------------------------------------------------------------------------------
 skills/s1-i-have-adhd-zh-tw/
@@ -113,6 +123,9 @@ Modifications:
   - Added an optional advisory Jev judgment pass over substantial drafted replies.
   - Translated instructional prose into en-US, retaining the Taiwan Traditional
     Chinese output default, literal examples, safety exceptions, and checklist.
+  - Rewrote the description to name the upstream skill it varies and to add
+    Traditional Chinese trigger phrases. The Jev pass accepts separate request
+    items and judges the draft's opening paragraph on its own.
 
 -------------------------------------------------------------------------------
 skills/s1-code-simplifier/
@@ -128,6 +141,11 @@ Modifications (stated as required by Apache-2.0 section 4b):
     for repos that document nothing.
   - Added an advisory Jev judgment gate over the before/after pair, which never
     certifies behavioral equivalence and never replaces the test run.
+  - Rewrote the description to name the upstream agent it varies, to narrow the
+    trigger to explicit cleanup requests and code written earlier in the
+    session, and to exclude features, bug fixes, and performance work. Added a
+    note that the contract-dependent checks are skipped when no contract is
+    supplied.
 
 -------------------------------------------------------------------------------
 Pattern sources

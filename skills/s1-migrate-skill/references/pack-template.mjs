@@ -12,6 +12,10 @@
  *     items:   [{ id?, text }],   // the things under review, in the caller's order
  *     context: string             // the minimum evidence needed to answer
  *   }
+ *
+ * Model state (`buildState`): reference first, then the material under
+ * judgment, and nothing code-only. Here `context` leads and `items` becomes a
+ * plain list of text; ids stay local.
  */
 
 // Replace `noul` and `readNoul` together when the designed question is Choice or Score.
@@ -55,17 +59,35 @@ export function validateState(state) {
  return null;
 }
 
+/** The only state sent to the model. Every backticked path in a question must resolve here. */
+export function buildState(state) {
+ const out = {};
+ if (asText(state?.context).trim() !== "") out.context = asText(state.context);
+ out.items = asArray(state?.items).map((item) => asText(item?.text));
+ return out;
+}
+
 export function buildQuestions(state, _args = {}) {
  const items = asArray(state?.items);
  const questions = {};
 
  items.forEach((item, index) => {
   if (asText(item?.text).trim() === "") return;
+  // Ask a question, name the state it compares, and say what to attend to.
+  // Criteria say what each outcome covers and what it is not for.
+  // Ask for the narrowest observable fact, judged on the item itself.
   questions[qid(index, "carries_information")] = noul(
-   `\`items[${index}].text\` tells the reader something not already stated in \`context\`.`,
    {
-    true: "A reader who skipped this item would miss a fact, decision, or instruction.",
-    false: "The item restates, warms up, or decorates; removing it loses nothing.",
+    question: `Does \`items[${index}]\` state a fact, result, claim, constraint, or instruction?`,
+    inspect: `\`items[${index}]\``,
+    focus: "Judge what the item says, not how well it says it.",
+   },
+   {
+    true: { what: "Says something specific the reader can act on, check, or disagree with" },
+    false: {
+     what: "Only greets, announces, frames, thanks, or summarizes without saying anything specific",
+     not_for: "A short transition the reader needs to follow the argument",
+    },
    },
   );
  });

@@ -1,6 +1,6 @@
 ---
 name: s1-i-have-adhd-zh-tw
-description: Answer in natural Taiwan Traditional Chinese (zh-TW), with the result or next action first. Use when the user requests Taiwan wording or the active response contract requires zh-TW for any reply, including coding, debugging, explanations, planning, research, and everyday conversation.
+description: Jev-checked variant of i-have-adhd-zh-tw. Reply in natural Taiwan Traditional Chinese (zh-TW) that opens with the answer, the result, or the one action the user must take, uses Taiwanese terms, keeps code, paths, and APIs verbatim, and drops openers, recaps, and sign-offs; an optional TypeSafe Jev check reviews long replies for answer-first, delegation, and coverage. Use when replying to the user in zh-TW for coding, debugging, planning, research, or chat (繁體中文回覆、台灣用語、先講結論); to edit an existing zh-TW article use s1-humanizer-zh-tw.
 license: MIT
 ---
 
@@ -151,17 +151,22 @@ When you do run it, write the draft and the original request into `job.json`:
 {
   "draft": "<the draft reply or minimum relevant excerpt, in the target language>",
   "request": "<the current user request and any necessary output constraints>",
+  "requestItems": ["<each separate question or instruction in the request>"],
   "banned": ["賦能", "閉環", "抓手", "底層邏輯", "——"]
 }
 ```
 
-`banned` is optional. When supplied, the CLI does the string matching in code and returns `result.literals`: the count and positions (index, line, column) of each term.
+`requestItems` is optional and worth filling in when the request asks for more than one thing: copy each ask as its own string. The pack then asks about each item separately and reports which one the draft may have skipped, which is more reliable than one question about "every item". Without it, coverage is a single holistic reading.
+
+`banned` is optional. When supplied, the CLI does the string matching in code and returns `result.literals`: the count and positions (index, line, column) of each term. The list itself is never sent to Jev.
+
+The pack cuts the draft's opening paragraph (everything before the first blank line) in code and asks the answer-first question about that paragraph alone, so put the answer before the first blank line.
 
 Banned words, banned sentence patterns, the em dash `——`, parenthetical asides, and output-only wrapper text are all string matching. Check them yourself with search; do not delegate them to a model.
 
 A match is a candidate, not a violation. The pack does not parse Markdown and makes no ruling; this skill decides the exceptions. Strings inside quoted source text, code, commands, paths, API names, error messages, and official product names stay verbatim, exactly as in the "Banned words, sentence patterns, and punctuation" section.
 
-The judgment covers semantic questions: does the first paragraph really lead with the answer (`answer_first`), was work the agent could do handed back to the user (`delegates_back`), does the reply cover what this turn's request actually asked for (`covers_request`), and does it add scope the user never asked for (`adds_unrequested_scope`).
+The judgment covers semantic questions: does the first paragraph really lead with the answer (`answer_first`), was work the agent could do handed back to the user (`delegates_back`), does the reply cover what this turn's request actually asked for (`covers_request`), and does it add scope the user never asked for (`adds_unrequested_scope`). Jev reads Traditional Chinese with lower accuracy than English, so treat each reading as a prompt to reread your draft, not as a finding.
 
 The pre-send checklist and output contract remain decisive. A judgment neither rewrites the
 reply nor approves it. Do not send secrets, credentials, or private user data; use the normal

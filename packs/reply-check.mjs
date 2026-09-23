@@ -16,10 +16,19 @@
  *
  * State:
  *   {
- *     draft:   string,     // the reply under review
- *     request: string,     // what the requester asked for
- *     banned:  [string]    // optional literal strings to locate in the draft
+ *     draft:         string,     // the reply under review
+ *     request:       string,     // what the requester asked for
+ *     requestItems?: [string],   // optional: each question or instruction in `request`
+ *     banned?:       [string]    // optional literal strings to locate in the draft
  *   }
+ *
+ * The model sees `buildState(state)`, not this state: `banned` never leaves the
+ * process, and the draft's opening paragraph (text up to the first blank line)
+ * is cut in code so the answer-first question points at it directly.
+ *
+ * With `requestItems`, coverage is one Noul per item and the pack reports the
+ * weakest one, following the "iterate in code, ask per item" guidance for
+ * anything that resembles counting. Without it, one holistic Noul is asked.
  */
 
 import { noul } from "../src/jev.mjs";
@@ -52,40 +61,121 @@ export function validateState(state) {
  for (const field of ["draft", "request"]) {
   if (typeof state?.[field] !== "string") return `State requires a string \`${field}\``;
  }
+ if (state.requestItems !== undefined) {
+  if (!Array.isArray(state.requestItems)) return "State requires `requestItems` to be an array";
+  for (const [index, item] of state.requestItems.entries()) {
+   if (typeof item !== "string") return `State requires \`requestItems[${index}]\` to be a string`;
+  }
+ }
  return null;
+}
+
+/** The draft up to its first blank line: what a reader sees before deciding to read on. */
+export function openingOf(draft) {
+ const text = asText(draft).replace(/\r\n/g, "\n").trim();
+ return text.split(/\n[ \t]*\n/)[0].trim();
+}
+
+function requestItemsOf(state) {
+ return asArray(state?.requestItems).filter((item) => typeof item === "string" && item.trim() !== "");
+}
+
+function itemId(index) {
+ return `covers_request_item_${index}`;
+}
+
+/**
+ * What the model reads, request first and draft after. Watched literals are
+ * located in code and stay out of it.
+ */
+export function buildState(state) {
+ const out = { request: asText(state?.request) };
+ const items = requestItemsOf(state);
+ if (items.length > 0) out.requestItems = items;
+ out.draftOpening = openingOf(state?.draft);
+ out.draft = asText(state?.draft);
+ return out;
 }
 
 export function buildQuestions(state, _args = {}) {
  if (asText(state?.draft).trim() === "") return {};
+ const items = requestItemsOf(state);
 
- return {
+ const questions = {
   [IDS.answerFirst]: noul(
-   "The first sentence of `draft` gives the answer, result, or decision that `request` asks for.",
    {
-    true: "A reader who stops after the first sentence already has what they asked for.",
-    false:
-     "The opening restates the request, describes process, sets up context, or warms up, so the " +
-     "answer arrives later in `draft`.",
+    question: "Does `draftOpening` give the answer, result, or decision that `request` asks for?",
+    compare: ["`draftOpening`", "`request`"],
+    focus: "`draftOpening` is the first paragraph of `draft`. Judge it alone.",
+   },
+   {
+    true: { what: "A reader who stops after `draftOpening` already has what they asked for" },
+    false: {
+     what: "The opening restates the request, describes process, sets up context, or warms up",
+     examples: ["\"Let's take a look at this.\"", "\"Good question.\""],
+    },
    },
   ),
   [IDS.delegatesBack]: noul(
-   "`draft` hands work back to the requester that `request` asked the writer to do.",
    {
-    true: "`draft` tells the requester to run, check, decide, or find something that was part of the assignment.",
-    false:
-     "Any action left to the requester is genuinely theirs: a decision only they can make, or access " +
-     "only they have.",
+    question: "Does `draft` hand work back to the requester that `request` asked the writer to do?",
+    compare: ["`draft`", "`request`"],
+    focus: "Look for instructions to the requester to run, check, decide, or find something.",
+   },
+   {
+    true: { what: "`draft` tells the requester to do something that was part of the assignment" },
+    false: {
+     what: "Any action left to the requester is genuinely theirs",
+     not_for: "A decision only the requester can make, or access only they have",
+    },
    },
   ),
-  [IDS.coversRequest]: noul("Every question and instruction in `request` is addressed somewhere in `draft`.", {
-   true: "Each asked item has a corresponding answer or an explicit statement of why it was not done.",
-   false: "At least one asked item is silently missing from `draft`.",
-  }),
-  [IDS.addsUnrequestedScope]: noul("`draft` reports work or recommendations that `request` did not ask for.", {
-   true: "`draft` contains material outside the request that the requester now has to read and judge.",
-   false: "`draft` stays within what `request` asked for.",
-  }),
+  [IDS.addsUnrequestedScope]: noul(
+   {
+    question: "Does `draft` report work or recommendations that `request` did not ask for?",
+    compare: ["`draft`", "`request`"],
+    focus: "Look for material the requester now has to read and judge that falls outside the request.",
+   },
+   {
+    true: { what: "`draft` contains material outside the request" },
+    false: {
+     what: "`draft` stays within what `request` asked for",
+     not_for: "A short risk or blocker the requester needs to act on the answer",
+    },
+   },
+  ),
  };
+
+ if (items.length === 0) {
+  questions[IDS.coversRequest] = noul(
+   {
+    question: "Does `draft` address every question and instruction in `request`?",
+    compare: ["`request`", "`draft`"],
+    focus: "An explicit statement of why an item was not done counts as addressed.",
+   },
+   {
+    true: { what: "Each asked item has an answer or an explicit reason it was not done" },
+    false: { what: "At least one asked item is silently missing from `draft`" },
+   },
+  );
+  return questions;
+ }
+
+ items.forEach((_item, index) => {
+  const at = `\`requestItems[${index}]\``;
+  questions[itemId(index)] = noul(
+   {
+    question: `Does \`draft\` answer or carry out ${at}?`,
+    compare: [at, "`draft`"],
+    focus: "An explicit statement of why the item was not done counts as addressed.",
+   },
+   {
+    true: { what: `\`draft\` answers ${at}, or says plainly why it was not done` },
+    false: { what: `\`draft\` never deals with ${at}` },
+   },
+  );
+ });
+ return questions;
 }
 
 /**
@@ -124,8 +214,21 @@ function watchedLiterals(state) {
  return [...new Set(configured)];
 }
 
+/**
+ * Whole-request coverage. Per item, the weakest item decides: one unaddressed
+ * item leaves the request uncovered. Any unanswered item makes it unknown.
+ */
+function coverageOf(response, state) {
+ const items = requestItemsOf(state);
+ if (items.length === 0) return { value: readNoul(response, IDS.coversRequest), items: [] };
+ const perItem = items.map((text, index) => ({ index, text, covered: readNoul(response, itemId(index)) }));
+ const values = perItem.map((item) => item.covered);
+ return { value: values.some((v) => v === null) ? null : Math.min(...values), items: perItem };
+}
+
 export function decide(response, state, _args = {}) {
  const { available, reason } = judgmentAvailability(response);
+ const coverage = coverageOf(response, state);
 
  const literals = watchedLiterals(state);
  const literalMatches = findLiterals(state?.draft, literals);
@@ -133,7 +236,7 @@ export function decide(response, state, _args = {}) {
  const signals = {
   answerFirst: readNoul(response, IDS.answerFirst),
   delegatesBack: readNoul(response, IDS.delegatesBack),
-  coversRequest: readNoul(response, IDS.coversRequest),
+  coversRequest: coverage.value,
   addsUnrequestedScope: readNoul(response, IDS.addsUnrequestedScope),
  };
 
@@ -153,6 +256,8 @@ export function decide(response, state, _args = {}) {
   },
   // Advisory. Unknown when the answer is missing.
   signals,
+  // Per-item coverage when `requestItems` was supplied; empty otherwise.
+  requestItems: coverage.items,
   attention: attentionOf(signals),
   advisoryOnly: true,
   note: available ? ADVISORY_NOTE : unavailableNote(reason),
@@ -217,6 +322,14 @@ export function render(result, state) {
   ]) +
   `\nAttention: ${result.attention.join("; ")}`,
  );
+
+ if (result.requestItems.length > 0) {
+  blocks.push(
+   ["Coverage per request item:"]
+    .concat(result.requestItems.map((item) => `  ${item.index + 1}. ${preview(item.text, 80)}: ${signalLine([["addressed", item.covered]])}`))
+    .join("\n"),
+  );
+ }
 
  blocks.push(result.note);
  return report(blocks);

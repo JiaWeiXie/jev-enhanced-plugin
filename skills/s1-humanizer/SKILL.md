@@ -1,6 +1,6 @@
 ---
 name: s1-humanizer
-description: Humanize English prose when the user asks to rewrite or edit text that sounds AI-generated, stiff, or promotional. Use when the task is prose editing, not watermark or provenance checks.
+description: Jev-checked variant of humanizer for English. Rewrite AI-sounding prose so every claim survives while not-X-but-Y contrasts, one-line closers, triads, dash overuse, hype, stock AI words, and bold labels go; TypeSafe Jev flags passages that say nothing, repeat, overclaim, or an editor would still reword. Use when asked to humanize, de-AI, or make English text sound less like AI, or when polishing English emails, docs, articles, READMEs, issues, PRs, or comments; for Traditional Chinese use s1-humanizer-zh-tw.
 license: "MIT AND CC-BY-SA-4.0"
 metadata:
   version: "3.0.0"
@@ -82,7 +82,7 @@ Then take the passages where the question is about meaning, not characters, and 
 }
 ```
 
-The pack asks four things about each passage: whether it tells the reader something they would not already have (`carries_information`), whether it repeats a point another passage already makes (`restates_other_passage`), whether it claims more than `context` supports (`claim_exceeds_context`), and whether it reads as natural, idiomatic prose in `locale` (`reads_natural_for_locale`). Use the answers to revisit passages you were unsure about, and to catch what step 3 missed.
+The pack asks up to four things about each passage: whether it states a fact, result, claim, constraint, or instruction at all (`carries_information`), whether it repeats a point another passage already makes (`restates_other_passage`, only when there are two or more passages), whether it claims more than `context` supports (`claim_exceeds_context`, only when `context` has text), and whether an editor who writes the target language would still reword it (`reads_natural_for_locale`). A question the state cannot support comes back as `not asked`, not as a pass. Use the answers to revisit passages you were unsure about, and to catch what step 3 missed.
 
 The catalog's *When not to act*, the writer's sample, protected spans, and the source-based
 fidelity check remain decisive. A judgment neither identifies authorship nor approves a rewrite.

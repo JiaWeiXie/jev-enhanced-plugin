@@ -1,6 +1,6 @@
 ---
 name: s1-grilling
-description: Grill a plan, decision, or idea through a relentless dependency-aware interview. Use when the user explicitly asks to be grilled or to stress-test their thinking.
+description: Jev-checked variant of grilling. Stress-test a plan, design, or decision through a dependency-tree interview that asks only questions whose prerequisites are settled, recommends an answer to each, and waits per round; TypeSafe Jev flags questions the conversation already answered. Use when the user says "grill me", "poke holes", "challenge my plan", "stress-test this", "what am I missing", or 幫我挑毛病、質疑我的計畫; not for writing or implementing the plan.
 license: MIT
 ---
 
@@ -85,6 +85,11 @@ that is eligible this round, the pack asks two things:
   answer, so confirm it before spending a round asking again;
 - `needs_user_decision`: the question asks for a preference or trade-off that is
   genuinely the user's call.
+
+Jev receives only `context` and the text of those eligible questions. Ids,
+prerequisites, `settled`, and blocked questions stay in code. With an empty
+`context`, `already_answered_in_context` is not asked, so paste the relevant
+excerpt of the conversation whenever one exists.
 
 Read each answer as a leaning using the display bands in `../jev-advisory.md`: `unknown` means no signal came back for that question. The bands are readability buckets, not decision thresholds.
 

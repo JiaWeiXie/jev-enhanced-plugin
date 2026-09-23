@@ -48,3 +48,13 @@ test('pack state validation failure is reported as an input error', () => {
   assert.equal(result.stdout, '');
   assert.match(result.stderr, /request/);
 });
+
+test('dry-run shows the filtered model state, not the raw pack state', () => {
+  const state = { draft: 'Done.\n\nMore.', request: 'Fix it.', banned: ['ZQX-WATCHED-4410'] };
+  const result = run('reply-check', JSON.stringify(state), ['--dry-run']);
+  assert.equal(result.status, 0);
+  const output = JSON.parse(result.stdout);
+  assert.deepEqual(output.request.state, { request: 'Fix it.', draftOpening: 'Done.', draft: 'Done.\n\nMore.' });
+  assert.deepEqual(Object.keys(output.request.state), ['request', 'draftOpening', 'draft'], 'reference before material');
+  assert.ok(!result.stdout.includes('ZQX-WATCHED-4410'));
+});

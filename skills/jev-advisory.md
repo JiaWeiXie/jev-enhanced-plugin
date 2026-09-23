@@ -20,6 +20,49 @@ questions sharing state belong in one request; they cannot see each other's answ
 
 Source: https://docs.typesafe.ai/concepts/system-one
 
+## Building the state
+
+The packs own the questions and the payload; you own the job file. Every pack
+turns the `job.json` you write into a smaller *model state* with its own
+`buildState`, and only that model state is posted. `--dry-run` prints it under
+`request.state`, so what you see there is exactly what a live run would send.
+
+What the packs do for you, following TypeSafe's published guidance
+(https://docs.typesafe.ai/concepts/how-to-build-with-system-one,
+https://docs.typesafe.ai/model-jaggedness/jev-1.13):
+
+- **Code-only fields stay local.** A review's `diff`, reply-check's `banned`
+  list, grilling's ids, prerequisites, settled and blocked questions, and every
+  file path or line number are used by code and never sent.
+- **Reference first, material after.** Contracts, specs, standards, requests, and
+  context come before the text being judged. In live checks this ordering alone
+  changed a correct catch from missed to found.
+- **One narrow question per judgment, pointing at a named field.** Whatever code
+  can compute (the opening paragraph of a draft, a language name for a locale
+  tag, whether a quote occurs in the diff) is computed before anything is asked.
+- **Unsupported questions are not asked.** A question whose field is empty (no
+  `contract`, no `context`, a finding without `evidence`, a single passage with
+  nothing to repeat) is reported as `not asked`. That is different from
+  `unknown`, which means a question was asked and no usable answer came back.
+  Neither is a pass.
+
+What stays yours:
+
+- Fill the named fields the active skill documents. Evidence fields hold the
+  actual text, such as a quoted hunk, a spec line, or a passage, because Jev
+  cannot open a path. Keep the paths, lines, and ids the schema asks for: code
+  uses them, even though the model never sees them.
+- Send the smallest excerpt that answers the question. Extra text is a distraction for
+  the model and extra data sent to a third party.
+- Keep content in the state and the judgment in the questions. Never write
+  instructions to the model into a state field, and never edit a pack's questions to
+  steer an answer for one run.
+- Jev's primary training language is English. Other languages, including Traditional
+  Chinese, are accepted with lower accuracy. The questions stay in English; for zh-TW
+  state, say that the reading is lower-accuracy and weigh it accordingly.
+- A Choice answer carries a confidence. Report it beside the choice, and treat low
+  confidence as a reason to reread, never as a reason to act or to drop anything.
+
 ## The command
 
 Resolve the installed CLI and an absolute state-file path before running it. Keep
@@ -41,7 +84,8 @@ node "<skill-directory>/../../src/cli.mjs" <pack> --state /absolute/path/to/job.
 - `--json` gives machine-readable output; drop it for a human-readable report.
 - `--dry-run` makes **no** inference. It prints
   `{"mode":"dry-run","request":{"state":…,"model":…,"questions":…},"answers":null}`,
-  so you can show the user exactly what a live run would send.
+  where `state` is the filtered model state, so you can show the user exactly what a
+  live run would send.
 - `--mock <file>` replays recorded answers (`mode: "mock"`). Mock answers are fixtures,
   not judgments; never present them to the user as model output.
 - `--list` prints the registered pack names. `--help` prints the usage.
@@ -73,6 +117,8 @@ back, so treat it as no result. When you get exit 3:
 2. Tell the user plainly that no usable Jev result came back, and what `reason` said.
 3. Never report success, a probability, a score, or a label that did not come from a
    real `live` response. An invented number is worse than no number.
+
+A host helper such as an Eval `judge()` is not a substitute for this CLI unless the response identifies TypeSafe Jev as the model that answered. Some hosts fall back to a chat model when no TypeSafe credential is available, and a chat model's `0`/`1` distributions are not System One probabilities. If the answering backend is not TypeSafe Jev, or cannot be identified, treat the pass as `unavailable`.
 
 Where the user's output contract is strict (only JSON, only code, only the final text),
 the contract wins: never inject a Jev note or an unavailability note into the artifact.

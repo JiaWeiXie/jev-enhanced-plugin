@@ -14,6 +14,9 @@
  *     after:    string,   // the code after
  *     contract: string    // the observable behavior callers depend on
  *   }
+ *
+ * The two questions that read `contract` are asked only when it has text;
+ * with an empty contract they are `not asked`, and their risk stays open.
  */
 
 import { noul } from "../src/jev.mjs";
@@ -49,33 +52,86 @@ export function validateState(state) {
  return null;
 }
 
+function hasContract(state) {
+ return asText(state?.contract).trim() !== "";
+}
+
+/** Risks that need `contract` to be judged. */
+const CONTRACT_RISKS = ["observableChange", "surfaceChange"];
+
+/**
+ * What the model reads: the contract when there is one, then the two versions.
+ * Reference first, material under judgment after: in live checks, the same
+ * question caught a changed empty-input result only with `contract` leading.
+ */
+export function buildState(state) {
+ const out = {};
+ if (hasContract(state)) out.contract = asText(state.contract);
+ out.before = asText(state?.before);
+ out.after = asText(state?.after);
+ return out;
+}
+
 export function buildQuestions(state, _args = {}) {
  if (asText(state?.before).trim() === "" || asText(state?.after).trim() === "") return {};
 
- return {
+ const questions = {
   [IDS.observableChange]: noul(
-   "There is an input allowed by `contract` for which `after` produces a different observable result than `before`.",
    {
-    true: "A caller could see a different return value, side effect, or ordering from `after`.",
-    false: "For every input `contract` allows, the observable result of `after` matches `before`.",
+    question: "Would a caller relying on `contract` get a different return value, side effect, or ordering of side effects from `after` than from `before`?",
+    compare: ["`before`", "`after`", "`contract`"],
+    focus: "Only what a caller can observe counts; renamed locals and restructured internals do not.",
+   },
+   {
+    true: {
+     what: "Some call that `contract` allows returns a different value, has a different side effect, or orders side effects differently in `after`",
+     examples: ["`before` returns 0 for an empty list and `after` returns undefined"],
+    },
+    false: { what: "Every call that `contract` allows returns the same value with the same side effects in the same order" },
    },
   ),
-  [IDS.droppedCase]: noul("`after` no longer handles a case that `before` handled explicitly.", {
-   true: "A branch, guard, or special case present in `before` has no equivalent in `after`.",
-   false: "Every case `before` handled is still handled in `after`, possibly by more general code.",
-  }),
+  [IDS.droppedCase]: noul(
+   {
+    question: "Does `after` stop handling a case that `before` handled explicitly?",
+    compare: ["`before`", "`after`"],
+    focus: "Look for branches, guards, and special cases in `before`.",
+   },
+   {
+    true: { what: "A branch, guard, or special case in `before` has no equivalent in `after`" },
+    false: {
+     what: "Every case `before` handled is still handled in `after`",
+     not_for: "A special case now covered by more general code",
+    },
+   },
+  ),
   [IDS.surfaceChange]: noul(
-   "`after` changes the surface described in `contract`: names, parameters, return shape, or thrown errors.",
    {
-    true: "A caller written against `contract` would need to change to keep working with `after`.",
-    false: "The surface in `contract` is untouched; only the implementation moved.",
+    question: "Does `after` change the surface described in `contract`: names, parameters, return shape, or thrown errors?",
+    compare: ["`contract`", "`after`"],
+    focus: "Judge what a caller written against `contract` depends on, not internal names.",
+   },
+   {
+    true: { what: "A caller written against `contract` would need to change to keep working with `after`" },
+    false: { what: "The surface in `contract` is untouched; only the implementation moved" },
    },
   ),
-  [IDS.errorPathChange]: noul("`after` changes what happens on the failure paths that `before` handled.", {
-   true: "An error is now swallowed, raised differently, raised at a different point, or no longer raised.",
-   false: "Failures surface the same way, at the same point, with the same type and information.",
-  }),
+  [IDS.errorPathChange]: noul(
+   {
+    question: "Does `after` change what happens on the failure paths that `before` handled?",
+    compare: ["`before`", "`after`"],
+    focus: "Compare which errors are raised, where, with what type and information.",
+   },
+   {
+    true: { what: "An error is now swallowed, raised differently, raised at a different point, or no longer raised" },
+    false: { what: "Failures surface the same way, at the same point, with the same type and information" },
+   },
+  ),
  };
+
+ if (!hasContract(state)) {
+  for (const key of CONTRACT_RISKS) delete questions[IDS[key]];
+ }
+ return questions;
 }
 
 export function decide(response, state, _args = {}) {
@@ -100,6 +156,8 @@ export function decide(response, state, _args = {}) {
   unknownRisks: Object.entries(risks)
    .filter(([, v]) => v === null)
    .map(([k]) => k),
+  // Asked for nothing about the contract when none was supplied; still open risks.
+  notAsked: hasContract(state) ? [] : [...CONTRACT_RISKS],
   // Invariant: constant true. No probability, and no absence of one, removes
   // the need to run the tests that cover `contract`.
   testsRequired: true,
@@ -151,6 +209,7 @@ export function render(result, state) {
  blocks.push(`Look at: ${result.focus.join("; ")}`);
 
  blocks.push(
+  (result.notAsked.length > 0 ? `Not asked, because \`contract\` is empty: ${result.notAsked.join(", ")}. Treat them as open.\n` : "") +
   "Required regardless of the numbers above: run the tests that cover `contract`, and have a human " +
   "read the diff. This pack does not approve changes and cannot establish that `before` and `after` " +
   "are equivalent.",

@@ -38,10 +38,19 @@ test("every registered pack validates its own state shape, and accepts a well-fo
   }
 });
 
-/** Mock response: every question answered with `value`, or per-id overrides. */
+/**
+ * Mock response: every question answered with `value`, or per-id overrides.
+ * A choice question picks its first label, which gets probability `value`.
+ */
 function answerAll(questions, value, overrides = {}) {
   const answers = Object.fromEntries(
-    Object.keys(questions).map((id) => [id, { type: "noul", noul: value }]),
+    Object.entries(questions).map(([id, question]) => {
+      if (question.type !== "choice") return [id, { type: "noul", noul: value }];
+      const labels = Object.keys(question.criteria);
+      const rest = (1 - value) / (labels.length - 1);
+      const probabilities = Object.fromEntries(labels.map((label, i) => [label, i === 0 ? value : rest]));
+      return [id, { type: "choice", choice: labels[0], confidence: value, probabilities }];
+    }),
   );
   for (const [id, noul] of Object.entries(overrides)) answers[id] = { type: "noul", noul };
   return { answers };
@@ -497,10 +506,16 @@ test("reply-check reports literal matches as candidates, never as a verdict", ()
 });
 
 test("reply-check never sends a watched literal to the model", () => {
-  const questions = replyCheck.buildQuestions(replyState, {});
+  // Both halves of the request: the questions, and the state the CLI posts,
+  // which carries the draft (it may quote a literal) but never the watch list.
+  const questions = JSON.stringify(replyCheck.buildQuestions(replyState, {}));
+  const modelState = replyCheck.buildState(replyState);
+  assert.equal("banned" in modelState, false);
   for (const literal of replyState.banned) {
-    assert.ok(!JSON.stringify(questions).includes(literal), `${literal} must stay local`);
+    assert.ok(!questions.includes(literal), `${literal} must stay local`);
   }
+  const unused = replyCheck.buildState({ ...replyState, banned: ["ZQX-WATCHED-9"] });
+  assert.ok(!JSON.stringify(unused).includes("ZQX-WATCHED-9"));
 });
 
 test("reply-check reports the delegation and answer-first signals it was given", () => {
@@ -631,13 +646,15 @@ test("grilling-frontier asks only about the open question, even when a settled i
       { id: "scope_detail", text: "Which endpoints inside those surfaces?" },
     ],
     settled: ["scope"],
-    context: "",
+    context: "We agreed the public API is in scope.",
   };
 
   const questions = grillingFrontier.buildQuestions(state, {});
   assert.equal(Object.keys(questions).length, 2, "one open question, two signals");
+  // The model state holds only the open question, renumbered from zero.
+  assert.deepEqual(grillingFrontier.buildState(state).questions, ["Which endpoints inside those surfaces?"]);
   for (const question of Object.values(questions)) {
-    assert.match(question.instructions, /`questions\[1\]\.text`/);
+    assert.match(JSON.stringify(question.instructions), /`questions\[0\]`/);
   }
 
   const result = grillingFrontier.decide({ answers: {} }, state, {});
@@ -650,6 +667,19 @@ test("grilling-frontier keeps a blocked question blocked whatever the judgments 
   const migration = result.questions.find((q) => q.id === "migration");
   assert.equal(migration.status, "blocked");
   assert.ok(!result.ready.includes("migration"));
+});
+
+test("grilling-frontier sends no question about a blocked node", () => {
+  const state = {
+    questions: [{ id: "a", text: "First?" }, { id: "b", text: "Second?", prerequisites: ["a"] }],
+    settled: [],
+    context: "c",
+  };
+  const asked = Object.keys(grillingFrontier.buildQuestions(state, {}));
+  assert.ok(asked.every((id) => !id.includes("_b_")), "a blocked node's text never reaches the model");
+  assert.equal(asked.length, 2);
+  const result = grillingFrontier.decide({ answers: {} }, state, {});
+  assert.deepEqual(result.blocked, [{ id: "b", unmetPrerequisites: ["a"] }]);
 });
 
 test("grilling-frontier falls back to positional ids when questions have none", () => {
@@ -697,5 +727,191 @@ test("grilling-frontier rejects a state whose question ids collide", () => {
   assert.equal(grillingFrontier.validateState(grillingState), null);
 });
 
+test("review-findings finds a quote in the diff across markers, wraps, and curly quotes", () => {
+  const state = {
+    findings: [
+      { axis: "standards", claim: "Uses var", evidence: "var x =\n 1" },
+      { axis: "spec", claim: "Wrong label", evidence: "label = “done”" },
+      { axis: "spec", claim: "Missing guard", evidence: "if (!user) return" },
+      { axis: "spec", claim: "No quote", evidence: "" },
+    ],
+    diff: ["--- a/src/b.mjs", "+++ b/src/b.mjs", "@@ -1,2 +1,2 @@", "-let x = 1", "+var x = 1", ' const label = "done"', ""].join("\n"),
+  };
+  const result = reviewFindings.decide(DEGRADED, state, {});
+  assert.deepEqual(
+    result.findings.map((f) => f.evidenceQuoted.status),
+    ["in diff", "in diff", "not in diff", "unknown"],
+  );
+});
 
+test("review-findings never matches a quote across hunk, file, or old/new boundaries", () => {
+  const diff = [
+    "--- a/src/a.mjs", "+++ b/src/a.mjs",
+    "@@ -1,1 +1,1 @@", "-const a = 1", "+const a = 2",
+    "@@ -9,1 +9,1 @@", "+return a",
+    "--- a/src/b.mjs", "+++ b/src/b.mjs",
+    "@@ -1,1 +1,1 @@", "+export default b",
+    "",
+  ].join("\n");
+  const quotes = ["const a = 2 return a", "return a export default b", "const a = 1 const a = 2", "const a = 1", "return a"];
+  const state = { findings: quotes.map((evidence) => ({ axis: "spec", claim: "c", evidence })), diff };
+  assert.deepEqual(
+    reviewFindings.decide(DEGRADED, state, {}).findings.map((f) => f.evidenceQuoted.status),
+    ["not in diff", "not in diff", "not in diff", "in diff", "in diff"],
+  );
+});
 
+test("review-findings keeps a contradicting quote distinct from an unrelated one", () => {
+  const questions = reviewFindings.buildQuestions(reviewState, {});
+  const relation = (picked) => ({
+    type: "choice",
+    choice: picked,
+    confidence: 0.9,
+    probabilities: { supports: 0.05, contradicts: picked === "contradicts" ? 0.9 : 0.05, says_nothing: picked === "says_nothing" ? 0.9 : 0.05 },
+  });
+  const response = answerAll(questions, 0.9);
+  response.answers.finding_0_evidence_relation = relation("says_nothing");
+  response.answers.finding_1_evidence_relation = relation("contradicts");
+  const result = reviewFindings.decide(response, reviewState, {});
+  assert.equal(result.findings[0].signals.evidenceSupports, 0.05);
+  assert.equal(result.findings[1].signals.evidenceSupports, 0.05);
+  assert.equal(result.findings[0].attention, "evidence may not show the problem; re-read it");
+  assert.equal(result.findings[1].attention, "evidence may contradict the claim; re-read it");
+  assert.match(reviewFindings.render(result, reviewState), /evidence relation: contradicts \(confidence 90%\)/);
+  assert.equal(result.findings.length, reviewState.findings.length, "a contradicted finding is still reported");
+});
+
+/** Resolve a backticked state path such as `findings[0].claim` against a model state. */
+function resolvePath(state, path) {
+  let value = state;
+  for (const [, key, index] of path.matchAll(/([A-Za-z_][\w]*)|\[(\d+)\]/g)) {
+    if (value === null || typeof value !== "object") return undefined;
+    value = key !== undefined ? value[key] : value[Number(index)];
+  }
+  return value;
+}
+
+function isPresent(value) {
+  if (typeof value === "string") return value.trim() !== "";
+  if (Array.isArray(value)) return value.length > 0;
+  return value !== undefined && value !== null;
+}
+
+// Rich and sparse states per pack: every path a question names must exist in
+// the state the model actually receives, whichever optional fields are present.
+const PATH_STATES = {
+  "review-findings": [
+    reviewState,
+    {
+      findings: [
+        { axis: "standards", file: "src/b.mjs", line: 4, claim: "Uses var", evidence: "var x = 1",
+          candidates: [{ id: "c1", excerpt: "var x = 1", file: "src/b.mjs", line: 4 }] },
+        { axis: "spec", claim: "Empty input throws", evidence: "" },
+      ],
+      diff: "@@ -1 +1 @@\n+var x = 1",
+      standards: "Never var.",
+      spec: "",
+      contextTests: "test('x', () => {})",
+    },
+  ],
+  humanizer: [
+    { passages: ["One.", "Two."], locale: "zh-TW", context: "Release note for users." },
+    { passages: ["Only one."], locale: "en-US" },
+  ],
+  "reply-check": [
+    { draft: "Done.\n\nDetails follow.", request: "Fix it and explain.", banned: ["賦能"] },
+    { draft: "Done.", request: "Fix it and explain.", requestItems: ["Fix it", "Explain the cause"] },
+  ],
+  "simplify-gate": [
+    { before: "a", after: "b", contract: "returns a number" },
+    { before: "a", after: "b", contract: "" },
+  ],
+  "grilling-frontier": [
+    { questions: [{ id: "a", text: "A?" }, { id: "b", text: "B?", prerequisites: ["a"] }], settled: [], context: "ctx" },
+    { questions: [{ id: "a", text: "A?" }, { id: "b", text: "B?", prerequisites: ["a"] }], settled: ["a"], context: "" },
+  ],
+};
+
+test("every pack builds the model state the questions refer to", () => {
+  for (const [name, states] of Object.entries(PATH_STATES)) {
+    const pack = getPack(name);
+    assert.equal(typeof pack.buildState, "function", `${name} must build its own model state`);
+    for (const state of states) {
+      assert.equal(pack.validateState(state), null, `${name} fixture must be valid`);
+      const modelState = pack.buildState(state);
+      const questions = pack.buildQuestions(state, {});
+      for (const [id, question] of Object.entries(questions)) {
+        const text = JSON.stringify([question.instructions, question.criteria]);
+        for (const [, path] of text.matchAll(/`([A-Za-z_][\w]*(?:\[\d+\]|\.[A-Za-z_]\w*)*)`/g)) {
+          assert.ok(isPresent(resolvePath(modelState, path)), `${name} ${id} names \`${path}\`, which the model state lacks`);
+        }
+      }
+    }
+  }
+});
+
+test("code-only fields never reach the model", () => {
+  const reviewJob = PATH_STATES["review-findings"][1];
+  const review = getPack("review-findings").buildState(reviewJob);
+  assert.equal("diff" in review, false, "the diff is for code checks only");
+  assert.equal("spec" in review, false, "empty text is left out");
+  // Both halves of the request: paths and lines may not ride along in options either.
+  const reviewRequest = JSON.stringify([getPack("review-findings").buildQuestions(reviewJob, {}), review]);
+  assert.equal(reviewRequest.includes("src/b.mjs"), false, "paths are provenance, not evidence");
+
+  const reply = getPack("reply-check").buildState(PATH_STATES["reply-check"][0]);
+  assert.equal(JSON.stringify(reply).includes("賦能"), false, "watched literals stay local");
+  assert.equal(reply.draftOpening, "Done.");
+
+  const grilling = getPack("grilling-frontier").buildState(PATH_STATES["grilling-frontier"][0]);
+  assert.deepEqual(grilling, { questions: ["A?"], context: "ctx" }, "blocked questions and graph ids stay local");
+});
+
+test("questions the state cannot support are not asked", () => {
+  const humanizerQuestions = Object.keys(humanizer.buildQuestions(PATH_STATES.humanizer[1], {}));
+  assert.deepEqual(humanizerQuestions.sort(), ["passage_0_carries_information", "passage_0_reads_natural_for_locale"], "no context, one passage");
+
+  const simplifyQuestions = Object.keys(simplifyGate.buildQuestions(PATH_STATES["simplify-gate"][1], {}));
+  assert.deepEqual(simplifyQuestions.sort(), ["dropped_case", "error_path_change"]);
+  const simplifyResult = simplifyGate.decide(DEGRADED, PATH_STATES["simplify-gate"][1], {});
+  assert.deepEqual(simplifyResult.notAsked, ["observableChange", "surfaceChange"]);
+  assert.equal(simplifyResult.testsRequired, true);
+
+  const grillingResult = grillingFrontier.decide({ answers: {} }, PATH_STATES["grilling-frontier"][1], {});
+  const open = grillingResult.questions.find((q) => q.id === "b");
+  assert.deepEqual(open.notAsked, ["alreadyAnsweredInContext: `context` is empty"]);
+  assert.match(grillingFrontier.render(grillingResult, PATH_STATES["grilling-frontier"][1]), /not asked: alreadyAnsweredInContext/);
+
+  const reviewQuestions = Object.keys(reviewFindings.buildQuestions(PATH_STATES["review-findings"][1], {}));
+  assert.ok(reviewQuestions.includes("finding_0_basis_documented"));
+  assert.ok(!reviewQuestions.includes("finding_1_evidence_relation"), "no evidence, no relation to judge");
+  assert.ok(!reviewQuestions.includes("finding_1_basis_documented"), "empty spec, no basis to check");
+  const reviewResult = reviewFindings.decide({ answers: {} }, PATH_STATES["review-findings"][1], {});
+  assert.equal(reviewResult.findings.length, 2, "an unjudgeable finding is still reported");
+  assert.equal(reviewResult.findings[1].attention, "no judgment possible from the supplied text");
+});
+
+test("the basis question reads only the finding's own axis", () => {
+  const questions = reviewFindings.buildQuestions(reviewState, {});
+  const spec = JSON.stringify(questions.finding_0_basis_documented?.instructions ?? {});
+  assert.ok(!spec.includes("`standards`"), "a spec finding is not checked against standards");
+});
+
+test("reply-check asks one coverage question per request item and reports the weakest", () => {
+  const state = PATH_STATES["reply-check"][1];
+  const questions = replyCheck.buildQuestions(state, {});
+  assert.ok(!("covers_request" in questions));
+  const response = answerAll(questions, 0.9, { covers_request_item_0: 0.95, covers_request_item_1: 0.1 });
+  const result = replyCheck.decide(response, state, {});
+  assert.equal(result.signals.coversRequest, 0.1);
+  assert.equal(result.requestItems[1].covered, 0.1);
+  assert.match(replyCheck.render(result, state), /Explain the cause: addressed 10%/);
+});
+
+test("the humanizer names the language instead of passing a locale tag", () => {
+  assert.equal(humanizer.buildState(PATH_STATES.humanizer[0]).language, "Traditional Chinese as written in Taiwan");
+  assert.match(humanizer.languageOf("pt-BR"), /pt-BR/);
+  // Traditional-script examples must not steer a Simplified Chinese passage.
+  const simplified = JSON.stringify(humanizer.buildQuestions({ passages: ["p"], locale: "zh-CN" }, {}));
+  assert.ok(!simplified.includes("部署時間"));
+});

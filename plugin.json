@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "jev-enhanced-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Third-party skills enhanced with advisory TypeSafe Jev judgments: two-axis code review, prose humanizing (en/zh-TW), reply checking, simplification gating, and design-tree grilling, plus a procedure for migrating further skills.",
   "author": {
     "name": "jev-enhanced-plugin contributors"

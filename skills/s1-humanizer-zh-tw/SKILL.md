@@ -1,6 +1,6 @@
 ---
 name: s1-humanizer-zh-tw
-description: Humanize Taiwan Traditional Chinese prose when the user asks to rewrite or edit text that sounds AI-generated, stiff, or translated. Use when the task is zh-TW prose editing, not watermark or provenance checks.
+description: Jev-checked variant of humanizer-zh-tw. Rewrite AI-sounding or translationese Taiwan Traditional Chinese (zh-TW) prose, cutting 進行/針對/透過 filler, mainland terms, triads, hype, and dash overuse while keeping every claim; TypeSafe Jev flags passages a Taiwanese editor would still reword. Use when asked to 潤稿、改寫、去 AI 味、修翻譯腔、讓文字更自然, or to edit zh-TW articles, docs, announcements, or release notes; for chat replies use s1-i-have-adhd-zh-tw, and not for watermark or invisible-Unicode removal.
 license: "MIT AND CC-BY-SA-4.0"
 metadata:
   source: kevintsai1202/Humanizer-zh-TW (a fork of op7418/humanizer-zh, translated from blader/humanizer)
@@ -80,11 +80,9 @@ Write the remaining semantic passages into `job.json`:
 }
 ```
 
-The pack asks four things about each passage: whether it tells the reader something they
-would not already have (`carries_information`), whether it repeats a point another passage
-already makes (`restates_other_passage`), whether it claims more than `context` supports
-(`claim_exceeds_context`), and whether it reads as natural, idiomatic prose in `locale`
-(`reads_natural_for_locale`). Treat the results as prompts to reread, nothing more.
+The pack asks up to four things about each passage: whether it states a fact, result, claim, constraint, or instruction at all (`carries_information`), whether it repeats a point another passage already makes (`restates_other_passage`, only when there are two or more passages), whether it claims more than `context` supports (`claim_exceeds_context`, only when `context` has text), and whether an editor who writes the target language would still reword it (`reads_natural_for_locale`). A question the state cannot support comes back as `not asked`, not as a pass. Treat the results as prompts to reread, nothing more.
+Jev reads Traditional Chinese with lower accuracy than English, so weigh
+`reads_natural_for_locale` below your own reading of the zh-TW text.
 
 Protected spans, the source-based fidelity check, and the watermark/provenance exclusion above
 remain decisive. A judgment neither identifies authorship nor proves or removes a watermark.

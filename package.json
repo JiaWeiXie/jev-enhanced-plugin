@@ -1,6 +1,6 @@
 {
   "name": "jev-enhanced-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Third-party skills enhanced with advisory TypeSafe Jev judgments: two-axis code review, prose humanizing (en/zh-TW), reply checking, simplification gating, and design-tree grilling, plus a procedure for migrating further skills.",

@@ -71,7 +71,15 @@ test('bundled skills expose concise model-invocation metadata', () => {
         ? descriptionField.continuations.join(" ")
         : descriptionField.value;
     assert.ok(description.trim(), `${skill} must have a non-empty description`);
-    assert.ok(description.length <= 300, `${skill} description exceeds 300 characters`);
+    // Codex rejects descriptions over 1024 (MAX_DESCRIPTION_LEN); Claude Code
+    // truncates the listing at 1,536. Count UTF-8 bytes so zh-TW trigger
+    // phrases cannot slip past the stricter host.
+    assert.ok(Buffer.byteLength(description, "utf8") <= 1024, `${skill} description exceeds 1024 bytes`);
+    if (!/^["'|>]/.test(descriptionField.value)) {
+      // In an unquoted YAML scalar, ": " starts a mapping and " #" a comment.
+      assert.ok(!/: | #/.test(description), `${skill} description needs quoting or rewording to stay valid YAML`);
+    }
+    assert.match(description, /^(Jev-checked variant of |Port an existing agent skill)/, `${skill} description must lead with its differentiator`);
     assert.equal(
       description.match(/\bUse when\b/g)?.length ?? 0,
       1,

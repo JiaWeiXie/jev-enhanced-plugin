@@ -35,7 +35,25 @@
  * `diff`, so it is computed here and never asked: each finding carries a
  * `withinDiff` of `inside`, `outside`, or `unknown`.
  *
+ * Whether `evidence` is quoted verbatim from `diff` is a string match, also
+ * computed here (the citation-check pattern: find the quote in code first,
+ * then ask a model only how it relates to the claim). A quote outside the diff
+ * is not fabricated: it may come from unchanged code in the touched files.
+ *
+ * How the evidence relates to the claim is one three-way Choice
+ * (`supports` / `contradicts` / `says_nothing`), so an unrelated quote and a
+ * quote that shows the opposite never collapse into the same "no".
+ *
  * All findings are judged in one request; questions run in parallel.
+ *
+ * The model reads `buildState(state)`, never this state. `diff` is used only
+ * by the code checks above and is not sent. Each finding goes out as its
+ * `claim` and `evidence`; candidate excerpts travel inside the options of the
+ * location Choice, where the model reads them, so they are not repeated in
+ * state. Empty text fields are left out, and a question whose field is empty
+ * is not asked: a finding with no `evidence` has no relation to judge, and a
+ * finding whose axis text (`standards` or `spec`) is empty has no basis to
+ * check. The basis question reads only the finding's own axis.
  */
 
 import { choice, noul } from "../src/jev.mjs";
@@ -62,10 +80,12 @@ export const description = "Advisory support signals per review finding; never r
 
 export const NO_MATCH = "noMatch";
 
+/** Evidence relation labels, in the order they are offered to the model. */
+export const RELATIONS = ["supports", "contradicts", "says_nothing"];
+
 const AXES = ["standards", "spec"];
 
 const SIGNALS = [
- ["evidenceSupports", "evidence_supports"],
  ["basisDocumented", "basis_documented"],
  ["coveredByTests", "covered_by_tests"],
 ];
@@ -86,8 +106,35 @@ function labelOf(candidate, index) {
  return base === NO_MATCH ? `${base}_candidate` : base;
 }
 
+function hasText(value) {
+ return asText(value).trim() !== "";
+}
+
 function hasTestContext(state) {
- return asText(state?.contextTests).trim() !== "";
+ return hasText(state?.contextTests);
+}
+
+/** The state field a finding's basis lives in: its own axis. */
+function basisField(finding) {
+ return finding?.axis === "standards" ? "standards" : "spec";
+}
+
+/** Which judgments a finding's state can support. Arithmetic on the state, not a judgment. */
+function askedFor(finding, state) {
+ return { relation: hasText(finding?.evidence), basis: hasText(state?.[basisField(finding)]) };
+}
+
+/** What the model reads: the non-empty reference texts first, then claims and quoted evidence. */
+export function buildState(state) {
+ const out = {};
+ for (const field of ["standards", "spec", "contextTests"]) {
+  if (hasText(state?.[field])) out[field] = asText(state[field]);
+ }
+ out.findings = asArray(state?.findings).map((finding) => ({
+  claim: asText(finding?.claim),
+  evidence: asText(finding?.evidence),
+ }));
+ return out;
 }
 
 /**
@@ -124,27 +171,52 @@ export function buildQuestions(state, _args = {}) {
  const questions = {};
 
  findings.forEach((finding, index) => {
-  const at = `\`findings[${index}]\``;
-  const where = `\`findings[${index}].file\`:\`findings[${index}].line\``;
+  const claim = `\`findings[${index}].claim\``;
+  const evidence = `\`findings[${index}].evidence\``;
 
-  questions[qid(index, "evidence_supports")] = noul(
-   `The quoted evidence in \`findings[${index}].evidence\` shows the problem asserted in ` +
-   `\`findings[${index}].claim\` at ${where}.`,
+  const asked = askedFor(finding, state);
+  if (asked.relation) questions[qid(index, "evidence_relation")] = choice(
    {
-    true: `The evidence names the same code as ${at} and demonstrates the asserted problem.`,
-    false:
-     "The evidence is missing, quotes unrelated code, or does not demonstrate the asserted " +
-     "problem, so a reader must go back to the source to check the claim.",
+    question: `How does ${evidence} relate to the problem asserted in ${claim}?`,
+    compare: [evidence, claim],
+    focus: "Judge only what the quoted text shows. Do not judge whether the problem matters.",
+   },
+   {
+    supports: {
+     what: "The evidence quotes the code or requirement the claim is about and shows the asserted problem",
+     examples: ["Claim \"Uses var\" with evidence \"var x = 1\""],
+    },
+    contradicts: {
+     what: "The evidence shows the code or requirement does not have the asserted problem",
+     examples: ["Claim \"Uses var\" with evidence \"const x = 1\""],
+    },
+    says_nothing: {
+     what: "The evidence is only a reference such as a section number or path, or text unrelated to the claim",
+     not_for: "Evidence that shows the problem in different words than the claim uses",
+     examples: ["Claim \"Does not emit the required event\" with evidence \"spec §3\""],
+    },
    },
   );
 
-  questions[qid(index, "basis_documented")] = noul(
-   `\`findings[${index}].claim\` follows a rule stated in \`standards\` or a requirement stated in \`spec\`.`,
+  const field = basisField(finding);
+  const rule = field === "standards" ? "rule" : "requirement";
+  if (asked.basis) questions[qid(index, "basis_documented")] = noul(
    {
-    true: "A reader can point at wording in `standards` or `spec` that the claim applies.",
-    false:
-     "Neither `standards` nor `spec` states the rule; the claim rests on general judgment or " +
-     "reviewer preference.",
+    question: `Does \`${field}\` state a ${rule} that ${claim} applies?`,
+    compare: [claim, `\`${field}\``],
+    focus: "Look for stated wording the claim applies, not for general good practice.",
+   },
+   {
+    true: {
+     what: `A reader can point at wording in \`${field}\` that the claim applies`,
+     examples: [field === "standards"
+      ? "Claim \"Uses var\" with standards \"Never var.\""
+      : "Claim \"Empty input throws\" with spec \"Empty input returns 0.\""],
+    },
+    false: {
+     what: `\`${field}\` states no such ${rule}; the claim rests on general judgment or preference`,
+     not_for: `A ${rule} that \`${field}\` states in different words`,
+    },
    },
   );
 
@@ -152,15 +224,17 @@ export function buildQuestions(state, _args = {}) {
   // there is nothing to compare against and the signal stays unknown.
   if (testContext) {
    questions[qid(index, "covered_by_tests")] = noul(
-    `\`contextTests\` contains a test that would fail while the problem asserted in ` +
-    `\`findings[${index}].claim\` is present.`,
     {
-     true:
-      "A test in `contextTests` — changed or unchanged — exercises the behavior the claim is " +
-      "about and would report a failure.",
-     false:
-      "No test in `contextTests` exercises that behavior, so the problem could be present " +
-      "without any test failing.",
+     question: `Does \`contextTests\` contain a test that would fail while the problem asserted in ${claim} is present?`,
+     compare: [claim, "`contextTests`"],
+     focus: "A test counts whether or not the change touched it.",
+    },
+    {
+     true: { what: "A test in `contextTests` asserts the behavior the claim is about and would report a failure" },
+     false: {
+      what: "No test in `contextTests` asserts that behavior, so the problem could be present without a failure",
+      not_for: "A test that asserts the behavior under a different name",
+     },
     },
    );
   }
@@ -168,19 +242,21 @@ export function buildQuestions(state, _args = {}) {
   // Evidence location, from caller-supplied candidates only. Same request.
   const candidates = candidatesOf(finding);
   if (candidates.length > 0) {
+   // Each option carries its own excerpt, the way a Choice over a roster
+   // carries each entry's description: the model reads the candidate where it
+   // weighs it, and the excerpt is sent once. File and line stay in code; the
+   // label maps the answer back to the caller's candidate.
    const options = Object.fromEntries(
-    candidates.map((candidate, position) => [
-     labelOf(candidate, position),
-     `Candidate \`findings[${index}].candidates[${position}]\` at ` +
-     `${candidate.file ?? `\`findings[${index}].file\``}:${candidate.line ?? "?"}` +
-     (candidate.excerpt ? ` — ${preview(candidate.excerpt, 160)}` : ""),
-    ]),
+    candidates.map((candidate, position) => [labelOf(candidate, position), asText(candidate.excerpt)]),
    );
-   options[NO_MATCH] = `None of the supplied candidates shows the problem asserted in \`findings[${index}].claim\`.`;
+   options[NO_MATCH] = { what: `None of the other options shows the problem asserted in ${claim}` };
 
    questions[qid(index, "evidence_location")] = choice(
-    `Which supplied candidate in \`findings[${index}].candidates\` most directly shows the problem ` +
-    `asserted in \`findings[${index}].claim\`? Select ${NO_MATCH} when none of them does.`,
+    {
+     question: `Which option's excerpt most directly shows the problem asserted in ${claim}?`,
+     inspect: claim,
+     focus: `Pick the excerpt that shows the problem itself, not merely nearby code. Select ${NO_MATCH} when none does.`,
+    },
     options,
    );
   }
@@ -196,10 +272,19 @@ export function decide(response, state, _args = {}) {
  const diffRanges = parseDiffRanges(state?.diff);
 
  const annotated = findings.map((finding, index) => {
-  const signals = Object.fromEntries(
-   SIGNALS.map(([key, suffix]) => [key, readNoul(response, qid(index, suffix))]),
-  );
-  const supportValues = [signals.evidenceSupports, signals.basisDocumented];
+  const relation = readChoice(response, qid(index, "evidence_relation"), RELATIONS);
+  const signals = {
+   // P(supports) from the relation distribution: one probability, same scale as a Noul.
+   evidenceSupports: relation ? relation.probabilities.supports : null,
+   ...Object.fromEntries(SIGNALS.map(([key, suffix]) => [key, readNoul(response, qid(index, suffix))])),
+  };
+  // Only the signals that were asked count toward "partial" or "unknown": a
+  // question the state could not support is not a missing answer.
+  const asked = askedFor(finding, state);
+  const supportValues = [
+   ...(asked.relation ? [signals.evidenceSupports] : []),
+   ...(asked.basis ? [signals.basisDocumented] : []),
+  ];
 
   const candidates = candidatesOf(finding);
   const labels = candidates.map(labelOf);
@@ -216,6 +301,7 @@ export function decide(response, state, _args = {}) {
 
   // Deterministic: computed from `diff`, never asked.
   const withinDiff = withinDiffOf(finding, diffRanges);
+  const evidenceQuoted = quotedInDiff(finding, state?.diff);
 
   return {
    index,
@@ -227,6 +313,13 @@ export function decide(response, state, _args = {}) {
    evidence: finding?.evidence ?? null,
    signals,
    withinDiff,
+   evidenceQuoted,
+   evidenceRelation: relation ? { choice: relation.choice, confidence: relation.confidence } : null,
+   // Questions the state could not support for this finding, so none was sent.
+   notAsked: [
+    ...(asked.relation ? [] : ["evidenceRelation: no `evidence` text"]),
+    ...(asked.basis ? [] : [`basisDocumented: no \`${basisField(finding)}\` text`]),
+   ],
    testCoverage: coverageOf(testContext, signals.coveredByTests),
    candidateCount: candidates.length,
    evidenceLocation: {
@@ -239,7 +332,7 @@ export function decide(response, state, _args = {}) {
     confidence: selection?.confidence ?? null,
    },
    // Advisory reading order only. Nothing here removes or demotes a finding.
-   attention: attentionOf(signals, supportValues, withinDiff),
+   attention: attentionOf(supportValues, withinDiff, relation),
    unknownSignals: anyUnknown(supportValues),
   };
  });
@@ -283,11 +376,63 @@ function locationStatus(candidateCount, selection, selectedCandidate) {
  * absence of a signal is never read as a clean bill of health. The diff
  * position is arithmetic, so it enters this reading as a fact.
  */
-function attentionOf(signals, values, withinDiff) {
+function attentionOf(values, withinDiff, relation) {
+ if (values.length === 0) return "no judgment possible from the supplied text";
  if (values.every((v) => v === null)) return "unknown";
  if (anyUnknown(values)) return "partial";
- if (signals.evidenceSupports >= ADVISORY_BANDS.high && withinDiff.status === "inside") return "evidence reads consistent";
+ // The relation is a Choice, so its selected label is read, not its
+ // `supports` probability against the Noul display bands.
+ if (relation?.choice === "contradicts") return "evidence may contradict the claim; re-read it";
+ if (relation?.choice === "says_nothing") return "evidence may not show the problem; re-read it";
+ if (relation?.choice === "supports" && withinDiff.status === "inside") return "evidence reads consistent";
  return "worth re-reading the evidence";
+}
+
+/**
+ * Searchable text of a unified diff, one entry per hunk side: the new side
+ * (context and added lines) and the old side (context and removed lines).
+ * Keeping hunks and sides apart stops a quote from matching across a hunk,
+ * file, or old/new boundary.
+ */
+function diffSegments(diff) {
+ const segments = [];
+ let hunk = null;
+ const flush = () => {
+  if (hunk) segments.push(hunk.new.join("\n"), hunk.old.join("\n"));
+  hunk = null;
+ };
+ for (const line of asText(diff).split("\n")) {
+  if (/^(?:diff |index |--- |\+\+\+ )/.test(line)) { flush(); continue; }
+  if (line.startsWith("@@")) { flush(); hunk = { new: [], old: [] }; continue; }
+  if (!hunk) continue;
+  const body = line.slice(1);
+  if (line.startsWith("+")) hunk.new.push(body);
+  else if (line.startsWith("-")) hunk.old.push(body);
+  else if (line.startsWith(" ") || line === "") { hunk.new.push(body); hunk.old.push(body); }
+ }
+ flush();
+ return segments.map(normalizeQuote).filter((text) => text !== "");
+}
+
+/** Collapse whitespace and fold curly quotes, so a quote matches across line wraps. */
+function normalizeQuote(text) {
+ return asText(text).replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Whether the finding's `evidence` appears in one hunk side of `diff`, after
+ * whitespace and curly-quote normalization. A string match, never asked.
+ * `not in diff` is not a fabrication verdict: reviewers may quote unchanged
+ * code from a touched file.
+ */
+function quotedInDiff(finding, diff) {
+ const quote = normalizeQuote(finding?.evidence);
+ if (quote === "") return { status: "unknown", reason: "finding has no quoted `evidence`" };
+ const segments = diffSegments(diff);
+ if (segments.length === 0) return { status: "unknown", reason: "no hunk text in `diff` to search" };
+ return segments.some((segment) => segment.includes(quote))
+  ? { status: "in diff", reason: null }
+  : { status: "not in diff", reason: "check the touched file; the quote may be unchanged code" };
 }
 
 /**
@@ -359,11 +504,13 @@ export function render(result, _state) {
      `   claim: ${preview(f.claim)}`,
      `   evidence: ${preview(f.evidence)}`,
      `   signals: ` +
-     signalLine([
-      ["evidence supports claim", f.signals.evidenceSupports],
-      ["basis in standards/spec", f.signals.basisDocumented],
-     ]),
+     signalLine([[`basis in ${f.axis === "standards" ? "standards" : "spec"}`, f.signals.basisDocumented]]),
      `   diff: ${f.withinDiff.status}` + (f.withinDiff.reason ? ` (${f.withinDiff.reason})` : ""),
+     `   evidence quote: ${f.evidenceQuoted.status}` + (f.evidenceQuoted.reason ? ` (${f.evidenceQuoted.reason})` : ""),
+     `   evidence relation: ` +
+     (f.evidenceRelation
+      ? `${f.evidenceRelation.choice} (confidence ${pct(f.evidenceRelation.confidence)})`
+      : "unknown"),
      `   test coverage: ${f.testCoverage.status}` +
      (f.testCoverage.reason
       ? ` (${f.testCoverage.reason})`
@@ -382,6 +529,7 @@ export function render(result, _state) {
      lines.push(`   evidence candidate: ${detail}`);
     }
 
+    if (f.notAsked.length > 0) lines.push(`   not asked: ${f.notAsked.join("; ")}`);
     lines.push(`   reading note: ${f.attention}`);
     return lines.join("\n");
    })

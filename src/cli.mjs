@@ -36,6 +36,8 @@ async function main() {
   const problem = pack.validateState(state);
   if (problem) throw new Error(problem);
   const questions = pack.buildQuestions(state, {});
+  // The model sees only what the questions reference; code-only fields stay local.
+  const modelState = pack.buildState(state);
   const mode = values['dry-run'] ? 'dry-run' : values.mock ? 'mock' : 'live';
   let response;
   let reason = null;
@@ -44,7 +46,7 @@ async function main() {
       response = { mode: 'not-needed', answers: {} };
     } else {
       const client = createClient({ mode, mockAnswers: values.mock ? await loadMockAnswers(values.mock) : null });
-      response = await client.ask(state, questions);
+      response = await client.ask(modelState, questions);
     }
   } catch (error) {
     if (!(error instanceof MissingApiKeyError || error instanceof TypeSafeError)) throw error;
