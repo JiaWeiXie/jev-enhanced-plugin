@@ -97,6 +97,8 @@ mise run install
 mise run test
 ```
 
+CI runs syntax checks and offline tests on Node 20 and 24, verifies the vendored SDK against its `audit.json` hash, and checks the exact `buildState` field projection for every registered pack. These checks use no API key and make no TypeSafe calls. The boundary tests cover model state, not redaction inside approved text fields or the code excerpts included in review questions.
+
 ## Running a pack directly
 
 ```
